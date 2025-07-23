@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:party_planner/services/auth_service.dart';
 import 'package:party_planner/screens/register_screen.dart';
 import 'package:party_planner/screens/admin_dashboard_screen.dart';
-import 'package:party_planner/screens/guest_invitation_screen.dart'; // NOVO: Importa a tela de convite
-import 'package:party_planner/services/event_service.dart'; // NOVO: Para pegar um evento simulado
-import 'package:party_planner/models/event.dart'; // NOVO: Para o modelo de Evento
+import 'package:party_planner/screens/guest_invitation_screen.dart';
+import 'package:party_planner/services/event_service.dart';
+// import 'package:party_planner/models/event.dart'; // Mantido, pois é usado para o tipo Event
+// import 'package:party_planner/models/guest.dart'; // Removido: Não é usado diretamente aqui
+// import 'package:party_planner/models/item.dart';   // REMOVIDO: Este é o import não utilizado!
 
 // A tela de login, que é um StatefulWidget.
 class LoginScreen extends StatefulWidget {
@@ -19,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
-  final EventService _eventService = EventService(); // NOVO: Instância do EventService
+  final EventService _eventService = EventService();
   bool _isLoading = false;
 
   // Método chamado quando o botão de login é pressionado.
@@ -49,13 +51,15 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // NOVO: Método para navegar para a tela de convidado (para testes)
+  // Método para navegar para a tela de convidado (para testes)
   void _navigateToGuestInvitation() async {
     setState(() {
-      _isLoading = true; // Simula carregamento
+      _isLoading = true;
     });
     // Pega o primeiro evento simulado para passar para a tela do convidado
-    List<Event> events = await _eventService.getEvents();
+    // O import de 'package:party_planner/models/event.dart' ainda é necessário para o tipo 'Event'
+    var events = await _eventService.getEvents(); // Aqui ele retorna List<Event>
+
     setState(() {
       _isLoading = false;
     });
@@ -129,9 +133,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: const Text('Não tem uma conta? Registre-se aqui.', style: TextStyle(color: Colors.deepPurple)),
               ),
               const SizedBox(height: 16),
-              // NOVO: Botão para simular acesso como Convidado
               TextButton(
-                onPressed: _isLoading ? null : _navigateToGuestInvitation, // Desabilita se estiver carregando
+                onPressed: _isLoading ? null : _navigateToGuestInvitation,
                 child: const Text('Acessar como Convidado (Teste)', style: TextStyle(color: Colors.blue)),
               ),
             ],

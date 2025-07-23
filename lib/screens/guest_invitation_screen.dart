@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:party_planner/models/event.dart'; // Importa o modelo Evento
 import 'package:party_planner/models/guest.dart'; // Importa o modelo Convidado
-import 'package:party_planner/models/item.dart';   // Importa o modelo Item
 import 'package:party_planner/services/event_service.dart'; // Importa o EventService
 
 class GuestInvitationScreen extends StatefulWidget {
@@ -288,7 +287,6 @@ class _GuestInvitationScreenState extends State<GuestInvitationScreen> {
               ),
             const SizedBox(height: 24),
 
-            // TODO: Adicionar botão para convidar alguém (se permitido pelo anfitrião)
           ],
         ),
       ),
