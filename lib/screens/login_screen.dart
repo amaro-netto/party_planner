@@ -43,7 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Login bem-sucedido!')),
       );
-      // TODO: Navegar para a tela principal do aplicativo (Dashboard).
+      
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Falha no login. Verifique suas credenciais.')),
