@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:party_planner/models/event.dart';
 import 'package:party_planner/services/event_service.dart';
+import 'package:party_planner/services/notification_service.dart'; // NOVO: Importa o serviço de Notificação
 
 class EventCreationScreen extends StatefulWidget {
   const EventCreationScreen({super.key});
@@ -11,27 +12,21 @@ class EventCreationScreen extends StatefulWidget {
 }
 
 class _EventCreationScreenState extends State<EventCreationScreen> {
-  // Controladores para os campos de texto do formulário.
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _predefinedItemController = TextEditingController();
 
-  // Variável para armazenar a data e hora selecionadas.
   DateTime _selectedDateTime = DateTime.now();
 
-  // Variável para a opção de contribuição de itens selecionada.
   ItemContributionOption _selectedContributionOption = ItemContributionOption.guestChooses;
-  // Lista para armazenar os itens pré-definidos pelo anfitrião.
   final List<String> _predefinedItems = [];
 
-  // Instância do nosso serviço de eventos.
   final EventService _eventService = EventService();
+  final NotificationService _notificationService = NotificationService(); // NOVO: Instância do serviço de notificação
 
-  // Variável para controlar o estado de carregamento durante a criação.
   bool _isLoading = false;
 
-  // Método para abrir o seletor de data.
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -52,7 +47,6 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
     }
   }
 
-  // Método para abrir o seletor de hora.
   Future<void> _selectTime(BuildContext context) async {
     final TimeOfDay? pickedTime = await showTimePicker(
       context: context,
@@ -71,7 +65,6 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
     }
   }
 
-  // Método para adicionar um item à lista de itens pré-definidos.
   void _addPredefinedItem() {
     final itemName = _predefinedItemController.text.trim();
     if (itemName.isNotEmpty && !_predefinedItems.contains(itemName)) {
@@ -90,15 +83,12 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
     }
   }
 
-  // Método para remover um item da lista de itens pré-definidos.
   void _removePredefinedItem(String item) {
     setState(() {
       _predefinedItems.remove(item);
     });
   }
 
-
-  // Método para criar o evento.
   Future<void> _createEvent() async {
     if (_titleController.text.isEmpty ||
         _locationController.text.isEmpty ||
@@ -115,7 +105,6 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
       );
       return;
     }
-
 
     setState(() {
       _isLoading = true;
@@ -139,8 +128,15 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
     });
 
     if (success) {
+      // NOVO: Agendando um lembrete para o anfitrião.
+      _notificationService.scheduleEventReminder(
+        newEvent,
+        'Seu evento "${newEvent.title}" se aproxima!',
+        const Duration(days: 1), // Lembrete 1 dia antes
+      );
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Evento criado com sucesso!')),
+        const SnackBar(content: Text('Evento criado com sucesso! Lembrete agendado.')),
       );
       Navigator.pop(context, true);
     } else {
@@ -151,7 +147,8 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext
+      context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Criar Novo Evento'),
