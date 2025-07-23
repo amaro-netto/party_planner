@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:party_planner/models/event.dart'; // Importa nosso modelo de Evento
 import 'package:party_planner/services/event_service.dart'; // Importa nosso serviço de Evento
+import 'package:party_planner/screens/event_creation_screen.dart';
 
 // A tela de dashboard do administrador, que é um StatefulWidget
 // porque ela vai carregar uma lista de eventos que pode mudar.
