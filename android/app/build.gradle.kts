@@ -10,8 +10,13 @@ plugins {
 
 android {
     namespace = "com.example.myapp"
+    // AQUI ESTÁ A ALTERAÇÃO NECESSÁRIA!
+    // Substituímos 'ndkVersion = flutter.ndkVersion'
+    // pela versão explícita que os plugins do Firebase exigem.
+    ndkVersion = "27.0.12077973"
+
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
