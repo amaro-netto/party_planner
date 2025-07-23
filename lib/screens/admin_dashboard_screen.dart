@@ -2,7 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:party_planner/models/event.dart'; // Importa nosso modelo de Evento
 import 'package:party_planner/services/event_service.dart'; // Importa nosso serviço de Evento
-import 'package:party_planner/screens/event_creation_screen.dart';
+import 'package:party_planner/screens/event_creation_screen.dart'; // Importa a tela de criação de evento
+import 'package:party_planner/screens/event_details_screen.dart'; // ADICIONADO: Importa a tela de detalhes do evento
 
 // A tela de dashboard do administrador, que é um StatefulWidget
 // porque ela vai carregar uma lista de eventos que pode mudar.
@@ -25,7 +26,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     _eventsFuture = _eventService.getEvents();
   }
 
-  // Método para recarregar os eventos (útil após criar um novo evento).
+  // Método para recarregar os eventos (útil após criar um novo evento ou voltar de detalhes).
   void _refreshEvents() {
     setState(() {
       _eventsFuture = _eventService.getEvents();
@@ -42,18 +43,23 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           // Botão para criar um novo evento
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () {
-              // TODO: Navegar para a tela de criação de evento.
-              // Por enquanto, apenas um SnackBar.
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Clicou para criar novo evento!')),
+            onPressed: () async { // Marcado como 'async' para esperar o resultado da navegação
+              // Navega para a tela de criação de evento e espera um resultado de retorno.
+              // O 'result' será 'true' se o evento foi criado com sucesso.
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const EventCreationScreen()),
               );
+              // Se o resultado for 'true' (evento criado com sucesso), recarrega a lista
+              if (result == true) {
+                _refreshEvents(); // Chama o método para recarregar a lista de eventos
+              }
             },
           ),
         ],
       ),
       body: FutureBuilder<List<Event>>(
-        future: _eventsFuture, // O Future que estamos esperando
+        future: _eventsFuture, // O Future que estamos esperando (carregamento de eventos)
         builder: (context, snapshot) {
           // Verifica o estado da conexão do Future
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -79,16 +85,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     leading: const Icon(Icons.event), // Ícone de evento
                     title: Text(event.title), // Título do evento
                     subtitle: Text('${event.location} - ${event.date.day}/${event.date.month}/${event.date.year}'), // Local e data
-                    onTap: () {
-                      // TODO: Navegar para a tela de detalhes do evento.
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Clicou no evento: ${event.title}')),
+                    onTap: () async { // Marcado como 'async' para esperar o retorno da tela de detalhes
+                      // Navega para a tela de detalhes do evento, passando o objeto 'event' clicado.
+                      // Aguarda o retorno da tela de detalhes.
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => EventDetailsScreen(event: event)),
                       );
+                      // Após retornar da tela de detalhes, recarrega os dados.
+                      // Isso é útil caso algum dado do evento (convidados, itens) tenha sido alterado lá.
+                      _refreshEvents();
                     },
                     trailing: IconButton(
                       icon: const Icon(Icons.edit),
                       onPressed: () {
-                        // TODO: Navegar para a tela de edição do evento.
+                        // TODO: Implementar navegação para a tela de edição do evento.
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Editar evento: ${event.title}')),
                         );
