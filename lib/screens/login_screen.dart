@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:party_planner/services/auth_service.dart';
 import 'package:party_planner/screens/register_screen.dart';
 import 'package:party_planner/screens/admin_dashboard_screen.dart';
+import 'package:party_planner/screens/guest_invitation_screen.dart'; // NOVO: Importa a tela de convite
+import 'package:party_planner/services/event_service.dart'; // NOVO: Para pegar um evento simulado
+import 'package:party_planner/models/event.dart'; // NOVO: Para o modelo de Evento
 
-// A tela de login, que é um StatefulWidget porque o estado (email, senha, carregamento) muda.
+// A tela de login, que é um StatefulWidget.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -12,14 +15,11 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-// O estado da tela de login.
 class _LoginScreenState extends State<LoginScreen> {
-  // Controladores para pegar o texto dos campos de email e senha.
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  // Instância do nosso serviço de autenticação.
   final AuthService _authService = AuthService();
-  // Variável para controlar o estado de carregamento (se está fazendo login).
+  final EventService _eventService = EventService(); // NOVO: Instância do EventService
   bool _isLoading = false;
 
   // Método chamado quando o botão de login é pressionado.
@@ -28,7 +28,6 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
-    // Chama o método de login do nosso serviço de autenticação.
     bool success = await _authService.loginUser(
       _emailController.text,
       _passwordController.text,
@@ -50,11 +49,35 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // NOVO: Método para navegar para a tela de convidado (para testes)
+  void _navigateToGuestInvitation() async {
+    setState(() {
+      _isLoading = true; // Simula carregamento
+    });
+    // Pega o primeiro evento simulado para passar para a tela do convidado
+    List<Event> events = await _eventService.getEvents();
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (events.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => GuestInvitationScreen(event: events.first)),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nenhum evento simulado disponível para convite.')),
+      );
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Login'),
+        title: const Text('PartyPlanner - Login'),
         backgroundColor: Theme.of(context).primaryColor,
       ),
       body: Center(
@@ -104,6 +127,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 },
                 child: const Text('Não tem uma conta? Registre-se aqui.', style: TextStyle(color: Colors.deepPurple)),
+              ),
+              const SizedBox(height: 16),
+              // NOVO: Botão para simular acesso como Convidado
+              TextButton(
+                onPressed: _isLoading ? null : _navigateToGuestInvitation, // Desabilita se estiver carregando
+                child: const Text('Acessar como Convidado (Teste)', style: TextStyle(color: Colors.blue)),
               ),
             ],
           ),
