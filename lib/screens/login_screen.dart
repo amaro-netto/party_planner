@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:party_planner/services/auth_service.dart'; // Importa nosso serviço de autenticação
 import 'package:party_planner/screens/register_screen.dart'; // Importa a tela de registro
+import 'package:party_planner/screens/admin_dashboard_screen.dart'; // ADICIONADO: Importa a tela da dashboard do admin
 
 // A tela de login, que é um StatefulWidget porque o estado (email, senha, carregamento) muda.
 class LoginScreen extends StatefulWidget {
@@ -39,12 +40,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
     // Mostra uma mensagem de sucesso ou erro na tela.
     if (success) {
-      // Navegaria para a tela principal do app em um cenário real.
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login bem-sucedido!')),
+      // Se o login for bem-sucedido, navega para a dashboard do administrador.
+      // pushReplacement impede que o usuário volte para a tela de login usando o botão "voltar".
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
       );
-      
     } else {
+      // Se o login falhou, mostra uma mensagem de erro.
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Falha no login. Verifique suas credenciais.')),
       );
