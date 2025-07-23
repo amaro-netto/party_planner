@@ -2,9 +2,8 @@
 
 // Um modelo para representar um Item que pode ser levado a um evento.
 class Item {
-  final String id; // ID único do item
-  final String name; // Nome do item (ex: "Refrigerante", "Carne")
-  // Quantidade total necessária ou sugerida pelo anfitrião (opcional)
+  final String id;
+  final String name;
   final int? quantityNeeded;
 
   // Construtor.

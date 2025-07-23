@@ -1,12 +1,12 @@
 // lib/screens/event_details_screen.dart
 import 'package:flutter/material.dart';
-import 'package:party_planner/models/event.dart'; // Importa o modelo de Evento
-import 'package:party_planner/models/guest.dart'; // Importa o modelo de Convidado
-import 'package:party_planner/models/item.dart';   // Importa o modelo de Item
-import 'package:party_planner/services/event_service.dart'; // Importa o serviço de Eventos
+import 'package:party_planner/models/event.dart';
+import 'package:party_planner/models/guest.dart';
+import 'package:party_planner/models/item.dart';
+import 'package:party_planner/services/event_service.dart';
 
 class EventDetailsScreen extends StatefulWidget {
-  final Event event; // O evento que será exibido nesta tela.
+  final Event event;
 
   const EventDetailsScreen({required this.event, super.key});
 
@@ -15,15 +15,13 @@ class EventDetailsScreen extends StatefulWidget {
 }
 
 class _EventDetailsScreenState extends State<EventDetailsScreen> {
-  final EventService _eventService = EventService(); // Instância do serviço de eventos
-  late Future<List<Guest>> _guestsFuture; // Future para a lista de convidados
-  late Future<List<Item>> _itemsFuture;   // Future para a lista de itens
+  final EventService _eventService = EventService();
+  late Future<List<Guest>> _guestsFuture;
+  late Future<List<Item>> _itemsFuture;
 
-  // Um TextEditingController para adicionar novos convidados rapidamente.
   final TextEditingController _newGuestNameController = TextEditingController();
   final TextEditingController _newGuestEmailController = TextEditingController();
 
-  // Um TextEditingController para adicionar novos itens a levar.
   final TextEditingController _newItemNameController = TextEditingController();
   final TextEditingController _newItemQuantityController = TextEditingController();
 
@@ -31,11 +29,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    // Carrega os convidados e itens quando a tela é iniciada.
     _loadEventData();
   }
 
-  // Método para carregar (ou recarregar) os dados do evento (convidados e itens).
   void _loadEventData() {
     setState(() {
       _guestsFuture = _eventService.getGuestsForEvent(widget.event.id);
@@ -43,7 +39,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     });
   }
 
-  // Método para adicionar um novo convidado (simulado).
   void _addNewGuest() async {
     if (_newGuestNameController.text.isEmpty || _newGuestEmailController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -63,11 +58,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     if (success) {
       _newGuestNameController.clear();
       _newGuestEmailController.clear();
-      _loadEventData(); // Recarrega a lista de convidados
+      _loadEventData();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Convidado adicionado com sucesso!')),
       );
-      // Opcional: Fechar o teclado.
       FocusScope.of(context).unfocus();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -76,7 +70,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     }
   }
 
-  // Método para adicionar um novo item (simulado).
   void _addNewItem() async {
     if (_newItemNameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -88,15 +81,15 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     final newItem = Item(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: _newItemNameController.text,
-      quantityNeeded: int.tryParse(_newItemQuantityController.text), // Tenta converter para int
+      quantityNeeded: int.tryParse(_newItemQuantityController.text),
     );
 
-    bool success = await _eventService.addItemToEvent(widget.event.id, newItem);
+    bool success = await _eventService.addOrUpdateCommittedItem(widget.event.id, newItem);
 
     if (success) {
       _newItemNameController.clear();
       _newItemQuantityController.clear();
-      _loadEventData(); // Recarrega a lista de itens
+      _loadEventData();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Item adicionado com sucesso!')),
       );
@@ -108,7 +101,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     }
   }
 
-  // Widget para exibir a lista de convidados
   Widget _buildGuestList() {
     return FutureBuilder<List<Guest>>(
       future: _guestsFuture,
@@ -122,8 +114,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         } else {
           final guests = snapshot.data!;
           return ListView.builder(
-            shrinkWrap: true, // Importante para ListView aninhado dentro de Column
-            physics: const NeverScrollableScrollPhysics(), // Desabilita o scroll da lista interna
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             itemCount: guests.length,
             itemBuilder: (context, index) {
               final guest = guests[index];
@@ -145,7 +137,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   trailing: Checkbox(
                     value: guest.isAttending,
                     onChanged: (bool? newValue) async {
-                      // Simula a atualização do status de presença
                       final updatedGuest = Guest(
                         id: guest.id,
                         name: guest.name,
@@ -155,11 +146,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         itemBringing: guest.itemBringing,
                       );
                       await _eventService.updateGuest(widget.event.id, updatedGuest);
-                      _loadEventData(); // Recarrega a lista após a atualização
+                      _loadEventData();
                     },
                   ),
                   onTap: () {
-                    // TODO: Implementar edição detalhada do convidado
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Editar detalhes de ${guest.name}')),
                     );
@@ -173,7 +163,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  // Widget para exibir a lista de itens
   Widget _buildItemList() {
     return FutureBuilder<List<Item>>(
       future: _itemsFuture,
@@ -202,7 +191,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   trailing: IconButton(
                     icon: const Icon(Icons.delete),
                     onPressed: () {
-                      // TODO: Implementar exclusão de item
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Deletar item: ${item.name}')),
                       );
@@ -221,15 +209,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.event.title), // Título da AppBar é o nome do evento
+        title: Text(widget.event.title),
         backgroundColor: Theme.of(context).primaryColor,
       ),
-      body: SingleChildScrollView( // Permite rolar toda a tela de detalhes
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            // Detalhes do Evento
             Text(
               widget.event.description,
               style: const TextStyle(fontSize: 16),
@@ -246,7 +233,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Seção Adicionar Convidado
             const Text(
               'Adicionar Novo Convidado',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -275,16 +261,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Seção Lista de Convidados
             const Text(
               'Lista de Convidados',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _buildGuestList(), // Chama o widget que constrói a lista de convidados
+            _buildGuestList(),
             const SizedBox(height: 24),
 
-            // Seção Adicionar Item
             const Text(
               'Adicionar Novo Item a Levar',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -313,13 +297,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Seção Lista de Itens
             const Text(
               'Itens para Levar',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _buildItemList(), // Chama o widget que constrói a lista de itens
+            _buildItemList(),
           ],
         ),
       ),

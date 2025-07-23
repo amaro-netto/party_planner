@@ -2,21 +2,21 @@
 
 // Um modelo para representar um Convidado em um evento.
 class Guest {
-  final String id; // ID único do convidado (no futuro, pode ser do Firebase Auth ID ou gerado)
-  final String name; // Nome do convidado
-  final String email; // Email do convidado
-  bool isAttending; // Status de confirmação (vai ou não vai)
-  int plusOneCount; // Quantidade de acompanhantes
-  String? itemBringing; // Item que o convidado se comprometeu a levar (opcional)
+  final String id;
+  final String name;
+  final String email;
+  bool isAttending;
+  int plusOneCount;
+  String? itemBringing;
 
   // Construtor.
   Guest({
     required this.id,
     required this.name,
     required this.email,
-    this.isAttending = false, // Padrão: não confirmado inicialmente
-    this.plusOneCount = 0,    // Padrão: nenhum acompanhante
-    this.itemBringing,        // Inicialmente nulo
+    this.isAttending = false,
+    this.plusOneCount = 0,
+    this.itemBringing,
   });
 
   // Método para converter Guest para um mapa (útil para salvar no DB).

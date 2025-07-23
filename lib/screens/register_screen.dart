@@ -1,10 +1,10 @@
 // lib/screens/register_screen.dart
 import 'package:flutter/material.dart';
-import 'package:party_planner/services/auth_service.dart'; // Importa nosso serviço de autenticação
+import 'package:party_planner/services/auth_service.dart';
 
 // A tela de registro, também um StatefulWidget.
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key}); // Construtor.
+  const RegisterScreen({super.key});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -28,11 +28,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('As senhas não coincidem.')),
       );
-      return; // Para a execução se as senhas não coincidirem.
+      return;
     }
 
     setState(() {
-      _isLoading = true; // Ativa o estado de carregamento.
+      _isLoading = true;
     });
 
     // Chama o método de registro do nosso serviço de autenticação.
@@ -42,15 +42,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
 
     setState(() {
-      _isLoading = false; // Desativa o estado de carregamento.
+      _isLoading = false;
     });
 
-    // Mostra uma mensagem de sucesso ou erro e navega de volta para a tela de login.
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registro bem-sucedido! Faça login agora.')),
       );
-      Navigator.pop(context); // Volta para a tela anterior (login).
+      Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Falha no registro. Tente novamente.')),
@@ -63,7 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Registro'),
-        backgroundColor: Theme.of(context).primaryColor, // Usa a cor principal do tema.
+        backgroundColor: Theme.of(context).primaryColor,
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -71,7 +70,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              // Campo de texto para o email.
               TextField(
                 controller: _emailController,
                 decoration: const InputDecoration(
@@ -82,7 +80,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 16),
-              // Campo de texto para a senha.
               TextField(
                 controller: _passwordController,
                 decoration: const InputDecoration(
@@ -93,22 +90,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 obscureText: true,
               ),
               const SizedBox(height: 16),
-              // Campo de texto para confirmar a senha.
               TextField(
                 controller: _confirmPasswordController,
                 decoration: const InputDecoration(
                   labelText: 'Confirmar Senha',
                   border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock_open), // Ícone diferente para confirmar senha.
+                  prefixIcon: Icon(Icons.lock_open),
                 ),
                 obscureText: true,
               ),
               const SizedBox(height: 24),
-              // Botão de registro.
               _isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
-                      onPressed: _register, // Chama o método _register ao pressionar.
+                      onPressed: _register,
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(
@@ -118,10 +113,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: const Text('Registrar', style: TextStyle(fontSize: 18)),
                     ),
               const SizedBox(height: 16),
-              // Botão para voltar para a tela de login.
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context); // Volta para a tela anterior.
+                  Navigator.pop(context);
                 },
                 child: const Text('Já tem uma conta? Voltar para o Login.', style: TextStyle(color: Colors.deepPurple)),
               ),

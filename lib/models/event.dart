@@ -1,18 +1,24 @@
 // lib/models/event.dart
 
+// Enumeração para definir as opções de contribuição de itens.
+enum ItemContributionOption {
+  predefinedList,  // Anfitrião faz uma lista do que precisa.
+  none,            // Convidados não precisam levar nada.
+  guestChooses,    // Convidados podem escolher livremente o que levar.
+}
+
 // Um modelo simples para representar um Evento no PartyPlanner.
 class Event {
-  // Propriedades de um evento. Usamos 'final' porque esses valores
-  // geralmente não mudam depois que o evento é criado.
   final String id;
   final String title;
   final String location;
   final DateTime date;
   final String description;
-  final String hostId; // O ID do usuário que criou o evento (anfitrião)
+  final String hostId;
+  final ItemContributionOption contributionOption;
+  final List<String> predefinedItems;
 
   // Construtor da classe Event.
-  // O 'required' significa que esses campos devem ser fornecidos ao criar um Evento.
   const Event({
     required this.id,
     required this.title,
@@ -20,31 +26,38 @@ class Event {
     required this.date,
     required this.description,
     required this.hostId,
+    this.contributionOption = ItemContributionOption.guestChooses,
+    this.predefinedItems = const [],
   });
 
   // Um método (opcional, mas útil) para converter um Evento em um mapa de dados.
-  // Isso é útil para salvar dados em um banco de dados como o Firestore no futuro.
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'title': title,
       'location': location,
-      'date': date.toIso8601String(), // Converte a data para string para armazenamento
+      'date': date.toIso8601String(),
       'description': description,
       'hostId': hostId,
+      'contributionOption': contributionOption.name,
+      'predefinedItems': predefinedItems,
     };
   }
 
   // Um método (opcional, mas útil) para criar um objeto Event a partir de um mapa de dados.
-  // Isso é útil para carregar dados de um banco de dados.
   factory Event.fromMap(Map<String, dynamic> map) {
     return Event(
       id: map['id'] as String,
       title: map['title'] as String,
       location: map['location'] as String,
-      date: DateTime.parse(map['date'] as String), // Converte a string de volta para DateTime
+      date: DateTime.parse(map['date'] as String),
       description: map['description'] as String,
       hostId: map['hostId'] as String,
+      contributionOption: ItemContributionOption.values.firstWhere(
+        (e) => e.name == map['contributionOption'],
+        orElse: () => ItemContributionOption.guestChooses,
+      ),
+      predefinedItems: List<String>.from(map['predefinedItems'] ?? []),
     );
   }
 }

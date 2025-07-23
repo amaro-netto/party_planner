@@ -1,7 +1,7 @@
 // lib/screens/event_creation_screen.dart
 import 'package:flutter/material.dart';
-import 'package:party_planner/models/event.dart'; // Importa o modelo de Evento
-import 'package:party_planner/services/event_service.dart'; // Importa o serviço de Eventos
+import 'package:party_planner/models/event.dart';
+import 'package:party_planner/services/event_service.dart';
 
 class EventCreationScreen extends StatefulWidget {
   const EventCreationScreen({super.key});
@@ -15,9 +15,15 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _predefinedItemController = TextEditingController();
 
   // Variável para armazenar a data e hora selecionadas.
   DateTime _selectedDateTime = DateTime.now();
+
+  // Variável para a opção de contribuição de itens selecionada.
+  ItemContributionOption _selectedContributionOption = ItemContributionOption.guestChooses;
+  // Lista para armazenar os itens pré-definidos pelo anfitrião.
+  final List<String> _predefinedItems = [];
 
   // Instância do nosso serviço de eventos.
   final EventService _eventService = EventService();
@@ -30,12 +36,11 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDateTime,
-      firstDate: DateTime.now(), // Não pode selecionar data no passado.
-      lastDate: DateTime(2101), // Data limite no futuro.
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2101),
     );
     if (pickedDate != null && pickedDate != _selectedDateTime) {
       setState(() {
-        // Atualiza apenas a data, mantendo o horário se já selecionado.
         _selectedDateTime = DateTime(
           pickedDate.year,
           pickedDate.month,
@@ -55,7 +60,6 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
     );
     if (pickedTime != null && pickedTime != TimeOfDay.fromDateTime(_selectedDateTime)) {
       setState(() {
-        // Atualiza apenas o horário, mantendo a data.
         _selectedDateTime = DateTime(
           _selectedDateTime.year,
           _selectedDateTime.month,
@@ -67,45 +71,78 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
     }
   }
 
+  // Método para adicionar um item à lista de itens pré-definidos.
+  void _addPredefinedItem() {
+    final itemName = _predefinedItemController.text.trim();
+    if (itemName.isNotEmpty && !_predefinedItems.contains(itemName)) {
+      setState(() {
+        _predefinedItems.add(itemName);
+        _predefinedItemController.clear();
+      });
+    } else if (itemName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, digite um nome para o item.')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Este item já está na lista.')),
+      );
+    }
+  }
+
+  // Método para remover um item da lista de itens pré-definidos.
+  void _removePredefinedItem(String item) {
+    setState(() {
+      _predefinedItems.remove(item);
+    });
+  }
+
+
   // Método para criar o evento.
   Future<void> _createEvent() async {
-    // Validação básica para garantir que os campos importantes não estão vazios.
     if (_titleController.text.isEmpty ||
         _locationController.text.isEmpty ||
         _descriptionController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, preencha todos os campos.')),
+        const SnackBar(content: Text('Por favor, preencha todos os campos obrigatórios.')),
       );
       return;
     }
 
+    if (_selectedContributionOption == ItemContributionOption.predefinedList && _predefinedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, adicione itens à lista pré-definida.')),
+      );
+      return;
+    }
+
+
     setState(() {
-      _isLoading = true; // Ativa o carregamento.
+      _isLoading = true;
     });
 
-    // Cria um novo objeto Event com os dados do formulário.
-    // O 'id' e 'hostId' são simulados por enquanto. No futuro, seriam gerados pelo backend.
     final newEvent = Event(
-      id: DateTime.now().millisecondsSinceEpoch.toString(), // ID único baseado no timestamp.
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: _titleController.text,
       location: _locationController.text,
       date: _selectedDateTime,
       description: _descriptionController.text,
-      hostId: 'current_user_id_simulado', // ID do anfitrião simulado.
+      hostId: 'current_user_id_simulado',
+      contributionOption: _selectedContributionOption,
+      predefinedItems: _predefinedItems,
     );
 
-    // Chama o serviço para criar o evento.
     bool success = await _eventService.createEvent(newEvent);
 
     setState(() {
-      _isLoading = false; // Desativa o carregamento.
+      _isLoading = false;
     });
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Evento criado com sucesso!')),
       );
-      Navigator.pop(context, true); // Volta para a tela anterior (Dashboard), passando 'true' para indicar sucesso.
+      Navigator.pop(context, true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Falha ao criar o evento. Tente novamente.')),
@@ -121,13 +158,12 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
         backgroundColor: Theme.of(context).primaryColor,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator()) // Mostra carregamento se estiver criando
+          ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch, // Estica os elementos horizontalmente
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  // Campo Título do Evento
                   TextField(
                     controller: _titleController,
                     decoration: const InputDecoration(
@@ -137,7 +173,6 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Campo Local
                   TextField(
                     controller: _locationController,
                     decoration: const InputDecoration(
@@ -147,23 +182,20 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Seleção de Data
                   ListTile(
                     title: Text('Data: ${_selectedDateTime.day}/${_selectedDateTime.month}/${_selectedDateTime.year}'),
                     trailing: const Icon(Icons.calendar_today),
-                    onTap: () => _selectDate(context), // Abre o seletor de data
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: Colors.grey)), // Borda para o ListTile
-                  ),
-                  const SizedBox(height: 16),
-                  // Seleção de Hora
-                  ListTile(
-                    title: Text('Hora: ${_selectedDateTime.hour.toString().padLeft(2, '0')}:${_selectedDateTime.minute.toString().padLeft(2, '0')}'),
-                    trailing: const Icon(Icons.access_time),
-                    onTap: () => _selectTime(context), // Abre o seletor de hora
+                    onTap: () => _selectDate(context),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: Colors.grey)),
                   ),
                   const SizedBox(height: 16),
-                  // Campo Descrição
+                  ListTile(
+                    title: Text('Hora: ${_selectedDateTime.hour.toString().padLeft(2, '0')}:${_selectedDateTime.minute.toString().padLeft(2, '0')}'),
+                    trailing: const Icon(Icons.access_time),
+                    onTap: () => _selectTime(context),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: Colors.grey)),
+                  ),
+                  const SizedBox(height: 16),
                   TextField(
                     controller: _descriptionController,
                     decoration: const InputDecoration(
@@ -171,12 +203,95 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.description),
                     ),
-                    maxLines: 3, // Permite múltiplas linhas para a descrição
+                    maxLines: 3,
                   ),
                   const SizedBox(height: 24),
-                  // Botão Criar Evento
+
+                  const Text('Opções de Contribuição de Itens:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<ItemContributionOption>(
+                    value: _selectedContributionOption,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Escolha uma opção',
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: ItemContributionOption.predefinedList,
+                        child: Text('1. O anfitrião faz uma lista'),
+                      ),
+                      DropdownMenuItem(
+                        value: ItemContributionOption.none,
+                        child: Text('2. Não precisa levar nada'),
+                      ),
+                      DropdownMenuItem(
+                        value: ItemContributionOption.guestChooses,
+                        child: Text('3. O convidado pode escolher algo para levar'),
+                      ),
+                    ],
+                    onChanged: (ItemContributionOption? newValue) {
+                      setState(() {
+                        _selectedContributionOption = newValue!;
+                        if (newValue != ItemContributionOption.predefinedList) {
+                          _predefinedItems.clear();
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 24),
+
+                  if (_selectedContributionOption == ItemContributionOption.predefinedList)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text('Itens Pré-definidos para a Lista:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _predefinedItemController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Nome do Item',
+                                  border: OutlineInputBorder(),
+                                ),
+                                onSubmitted: (_) => _addPredefinedItem(),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: _addPredefinedItem,
+                              child: const Icon(Icons.add),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        _predefinedItems.isEmpty
+                            ? const Text('Nenhum item adicionado ainda.', style: TextStyle(fontStyle: FontStyle.italic))
+                            : ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: _predefinedItems.length,
+                                itemBuilder: (context, index) {
+                                  final item = _predefinedItems[index];
+                                  return Card(
+                                    margin: const EdgeInsets.symmetric(vertical: 4),
+                                    child: ListTile(
+                                      title: Text(item),
+                                      trailing: IconButton(
+                                        icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                                        onPressed: () => _removePredefinedItem(item),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+
                   ElevatedButton(
-                    onPressed: _createEvent, // Chama o método _createEvent ao pressionar
+                    onPressed: _createEvent,
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
                       shape: RoundedRectangleBorder(

@@ -1,12 +1,12 @@
 // lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
-import 'package:party_planner/services/auth_service.dart'; // Importa nosso serviço de autenticação
-import 'package:party_planner/screens/register_screen.dart'; // Importa a tela de registro
-import 'package:party_planner/screens/admin_dashboard_screen.dart'; // ADICIONADO: Importa a tela da dashboard do admin
+import 'package:party_planner/services/auth_service.dart';
+import 'package:party_planner/screens/register_screen.dart';
+import 'package:party_planner/screens/admin_dashboard_screen.dart';
 
 // A tela de login, que é um StatefulWidget porque o estado (email, senha, carregamento) muda.
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key}); // Construtor para a tela de login.
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -25,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // Método chamado quando o botão de login é pressionado.
   Future<void> _login() async {
     setState(() {
-      _isLoading = true; // Ativa o estado de carregamento
+      _isLoading = true;
     });
 
     // Chama o método de login do nosso serviço de autenticação.
@@ -35,19 +35,15 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     setState(() {
-      _isLoading = false; // Desativa o estado de carregamento
+      _isLoading = false;
     });
 
-    // Mostra uma mensagem de sucesso ou erro na tela.
     if (success) {
-      // Se o login for bem-sucedido, navega para a dashboard do administrador.
-      // pushReplacement impede que o usuário volte para a tela de login usando o botão "voltar".
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
       );
     } else {
-      // Se o login falhou, mostra uma mensagem de erro.
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Falha no login. Verifique suas credenciais.')),
       );
@@ -59,54 +55,50 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Login'),
-        backgroundColor: Theme.of(context).primaryColor, // Usa a cor principal do tema
+        backgroundColor: Theme.of(context).primaryColor,
       ),
       body: Center(
-        child: SingleChildScrollView( // Permite rolar a tela se o teclado aparecer
-          padding: const EdgeInsets.all(24.0), // Espaçamento interno
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center, // Centraliza os elementos verticalmente
+            mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              // Campo de texto para o email
               TextField(
                 controller: _emailController,
                 decoration: const InputDecoration(
                   labelText: 'Email',
-                  border: OutlineInputBorder(), // Borda ao redor do campo
-                  prefixIcon: Icon(Icons.email), // Ícone de email
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
                 ),
-                keyboardType: TextInputType.emailAddress, // Teclado otimizado para email
+                keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 16), // Espaço entre os campos
-              // Campo de texto para a senha
+              const SizedBox(height: 16),
               TextField(
                 controller: _passwordController,
                 decoration: const InputDecoration(
                   labelText: 'Senha',
                   border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock), // Ícone de cadeado
+                  prefixIcon: Icon(Icons.lock),
                 ),
-                obscureText: true, // Esconde o texto da senha
+                obscureText: true,
               ),
               const SizedBox(height: 24),
-              // Botão de login
               _isLoading
-                  ? const CircularProgressIndicator() // Mostra um indicador de carregamento
+                  ? const CircularProgressIndicator()
                   : ElevatedButton(
-                      onPressed: _login, // Chama o método _login ao pressionar
+                      onPressed: _login,
                       style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50), // Botão de largura total
+                        minimumSize: const Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8), // Bordas arredondadas
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: const Text('Entrar', style: TextStyle(fontSize: 18)),
                     ),
               const SizedBox(height: 16),
-              // Texto e botão para navegar para a tela de registro
               TextButton(
                 onPressed: () {
-                  Navigator.push( // Navega para a tela de registro
+                  Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const RegisterScreen()),
                   );
