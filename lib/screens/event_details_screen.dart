@@ -161,7 +161,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                     },
                   ),
                   onTap: () {
-                    // TODO: Implementar edição detalhada do convidado
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Editar detalhes de ${guest.name}')),
                     );
@@ -204,7 +204,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   trailing: IconButton(
                     icon: const Icon(Icons.delete),
                     onPressed: () {
-                      // TODO: Implementar exclusão de item
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Deletar item: ${item.name}')),
                       );
