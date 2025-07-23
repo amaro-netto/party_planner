@@ -4,7 +4,7 @@ import 'package:party_planner/models/event.dart';
 import 'package:party_planner/models/guest.dart';
 import 'package:party_planner/models/item.dart';
 import 'package:party_planner/services/event_service.dart';
-import 'package:party_planner/services/calculator_service.dart'; // NOVO: Importa o serviço de Calculadoras
+import 'package:party_planner/services/calculator_service.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final Event event;
@@ -17,7 +17,7 @@ class EventDetailsScreen extends StatefulWidget {
 
 class _EventDetailsScreenState extends State<EventDetailsScreen> {
   final EventService _eventService = EventService();
-  final CalculatorService _calculatorService = CalculatorService(); // NOVO: Instância do serviço de calculadoras
+  final CalculatorService _calculatorService = CalculatorService();
   late Future<List<Guest>> _guestsFuture;
   late Future<List<Item>> _itemsFuture;
 
@@ -116,16 +116,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         } else {
           final guests = snapshot.data!;
 
-          // NOVO: Calcular convidados confirmados e acompanhantes aqui
           final int confirmedGuests = guests.where((g) => g.isAttending).length;
           final int totalPlusOnes = guests.where((g) => g.isAttending).fold(0, (sum, g) => sum + g.plusOneCount);
           final int totalAttendees = _calculatorService.calculateTotalAttendees(confirmedGuests, totalPlusOnes);
 
-          // NOVO: Calcular estimativas de bebida e carne
           final double estimatedBeverage = _calculatorService.calculateBeveragePerGuest(totalAttendees);
           final double estimatedMeat = _calculatorService.calculateMeatPerGuest(totalAttendees);
 
-          return Column( // Use Column para adicionar os totais antes da lista
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Total de Convidados Confirmados: $confirmedGuests', style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -137,6 +135,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               const SizedBox(height: 16),
               ListView.builder(
                 shrinkWrap: true,
+                // CORRIGIDO: Nome da classe de physics
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: guests.length,
                 itemBuilder: (context, index) {
@@ -156,20 +155,61 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                             Text('Trazendo: ${guest.itemBringing}'),
                         ],
                       ),
-                      trailing: Checkbox(
-                        value: guest.isAttending,
-                        onChanged: (bool? newValue) async {
-                          final updatedGuest = Guest(
-                            id: guest.id,
-                            name: guest.name,
-                            email: guest.email,
-                            isAttending: newValue!,
-                            plusOneCount: guest.plusOneCount,
-                            itemBringing: guest.itemBringing,
-                          );
-                          await _eventService.updateGuest(widget.event.id, updatedGuest);
-                          _loadEventData();
-                        },
+                      trailing: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Checkbox(
+                            value: guest.isAttending,
+                            onChanged: (bool? newValue) async {
+                              final updatedGuest = Guest(
+                                id: guest.id,
+                                name: guest.name,
+                                email: guest.email,
+                                isAttending: newValue!,
+                                plusOneCount: guest.plusOneCount,
+                                itemBringing: guest.itemBringing,
+                              );
+                              await _eventService.updateGuest(widget.event.id, updatedGuest);
+                              _loadEventData();
+                            },
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline),
+                                onPressed: guest.plusOneCount > 0 ? () async {
+                                  final updatedGuest = Guest(
+                                    id: guest.id,
+                                    name: guest.name,
+                                    email: guest.email,
+                                    isAttending: guest.isAttending,
+                                    plusOneCount: guest.plusOneCount - 1,
+                                    itemBringing: guest.itemBringing,
+                                  );
+                                  await _eventService.updateGuest(widget.event.id, updatedGuest);
+                                  _loadEventData();
+                                } : null,
+                              ),
+                              Text('${guest.plusOneCount}'),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline),
+                                onPressed: () async {
+                                  final updatedGuest = Guest(
+                                    id: guest.id,
+                                    name: guest.name,
+                                    email: guest.email,
+                                    isAttending: guest.isAttending,
+                                    plusOneCount: guest.plusOneCount + 1,
+                                    itemBringing: guest.itemBringing,
+                                  );
+                                  await _eventService.updateGuest(widget.event.id, updatedGuest);
+                                  _loadEventData();
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -201,6 +241,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           final items = snapshot.data!;
           return ListView.builder(
             shrinkWrap: true,
+            // CORRIGIDO: Nome da classe de physics
             physics: const NeverScrollableScrollPhysics(),
             itemCount: items.length,
             itemBuilder: (context, index) {
@@ -229,6 +270,110 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
+  // NOVO: Método para construir o resumo de itens e análise
+  Widget _buildItemSummaryAndAnalysis() {
+    return FutureBuilder<List<Item>>(
+      future: _itemsFuture, // Usa o mesmo Future dos itens trazidos pelos convidados
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CircularProgressIndicator(); // Mostra carregamento
+        } else if (snapshot.hasError) {
+          return Text('Erro ao carregar totais de itens: ${snapshot.error}');
+        } else if (!snapshot.hasData) {
+          return const Text('Nenhum dado de item disponível.');
+        } else {
+          final List<Item> committedItems = snapshot.data!;
+          // Precisa esperar o _guestsFuture também para ter o total de participantes
+          return FutureBuilder<List<Guest>>(
+            future: _guestsFuture,
+            builder: (context, guestSnapshot) {
+              if (guestSnapshot.connectionState == ConnectionState.waiting) {
+                return const CircularProgressIndicator();
+              } else if (guestSnapshot.hasError) {
+                return Text('Erro ao carregar convidados para análise: ${guestSnapshot.error}');
+              } else if (!guestSnapshot.hasData) {
+                return const Text('Nenhum dado de convidado disponível para análise.');
+              } else {
+                final List<Guest> guests = guestSnapshot.data!;
+                final int confirmedGuests = guests.where((g) => g.isAttending).length;
+                final int totalPlusOnes = guests.where((g) => g.isAttending).fold(0, (sum, g) => sum + g.plusOneCount);
+                final int totalAttendees = _calculatorService.calculateTotalAttendees(confirmedGuests, totalPlusOnes);
+
+                // Calcula o total de bebidas e carnes que os convidados se comprometeram a trazer
+                double committedBeverageLiters = 0.0;
+                double committedMeatKg = 0.0;
+
+                for (var item in committedItems) {
+                  final lowerCaseName = item.name.toLowerCase();
+                  if (item.quantityNeeded != null) {
+                    if (lowerCaseName.contains('refrigerante') || lowerCaseName.contains('água') || lowerCaseName.contains('cerveja')) {
+                      committedBeverageLiters += item.quantityNeeded!;
+                    } else if (lowerCaseName.contains('carne') || lowerCaseName.contains('linguiça')) {
+                      committedMeatKg += item.quantityNeeded!;
+                    }
+                  }
+                }
+
+                // Obtém as estimativas necessárias
+                final double neededBeverageLiters = _calculatorService.calculateBeveragePerGuest(totalAttendees);
+                final double neededMeatKg = _calculatorService.calculateMeatPerGuest(totalAttendees);
+
+                // Lógica de Suficiência
+                Color beverageColor = Colors.black;
+                String beverageStatus = '';
+                if (committedBeverageLiters >= neededBeverageLiters * 0.9) {
+                  beverageColor = Colors.green;
+                  beverageStatus = 'Suficiente!';
+                } else if (committedBeverageLiters >= neededBeverageLiters * 0.5) {
+                  beverageColor = Colors.orange;
+                  beverageStatus = 'Atenção, pode faltar.';
+                } else {
+                  beverageColor = Colors.red;
+                  beverageStatus = 'Vai faltar MUITO!';
+                }
+
+                Color meatColor = Colors.black;
+                String meatStatus = '';
+                if (committedMeatKg >= neededMeatKg * 0.9) {
+                  meatColor = Colors.green;
+                  meatStatus = 'Suficiente!';
+                } else if (committedMeatKg >= neededMeatKg * 0.5) {
+                  meatColor = Colors.orange;
+                  meatStatus = 'Atenção, pode faltar.';
+                } else {
+                  meatColor = Colors.red;
+                  meatStatus = 'Vai faltar MUITO!';
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Resumo e Análise de Itens', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 10),
+                    Text('Total de Bebidas Trazidas: ${committedBeverageLiters.toStringAsFixed(1)} Litros'),
+                    Text('Estimativa Necessária: ${neededBeverageLiters.toStringAsFixed(1)} Litros'),
+                    Text(
+                      'Status Bebidas: $beverageStatus',
+                      style: TextStyle(color: beverageColor, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                    Text('Total de Carne Trazida: ${committedMeatKg.toStringAsFixed(1)} KG'),
+                    Text('Estimativa Necessária: ${neededMeatKg.toStringAsFixed(1)} KG'),
+                    Text(
+                      'Status Carne: $meatStatus',
+                      style: TextStyle(color: meatColor, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                );
+              }
+            },
+          );
+        }
+      },
+    );
+  }
+
   String _getContributionOptionDescription(ItemContributionOption option) {
     switch (option) {
       case ItemContributionOption.predefinedList:
@@ -237,8 +382,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         return 'Os convidados NÃO precisam levar nada.';
       case ItemContributionOption.guestChooses:
         return 'Os convidados podem ESCOLHER livremente o que levar.';
-      default:
-        return 'Opção desconhecida.';
     }
   }
 
@@ -307,6 +450,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   const SizedBox(height: 24),
                 ],
               ),
+
+            // NOVO: Adiciona a seção de resumo e análise de itens aqui
+            _buildItemSummaryAndAnalysis(),
 
             const Text(
               'Adicionar Novo Convidado',
