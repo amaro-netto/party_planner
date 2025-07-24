@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:party_planner/models/event.dart';
 import 'package:party_planner/services/event_service.dart';
-import 'package:party_planner/services/notification_service.dart'; // NOVO: Importa o serviço de Notificação
+import 'package:party_planner/services/notification_service.dart';
 
 class EventCreationScreen extends StatefulWidget {
   const EventCreationScreen({super.key});
@@ -21,9 +21,10 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
 
   ItemContributionOption _selectedContributionOption = ItemContributionOption.guestChooses;
   final List<String> _predefinedItems = [];
+  bool _allowPlusOne = true; // NOVO: Estado do switch para permitir acompanhantes
 
   final EventService _eventService = EventService();
-  final NotificationService _notificationService = NotificationService(); // NOVO: Instância do serviço de notificação
+  final NotificationService _notificationService = NotificationService();
 
   bool _isLoading = false;
 
@@ -119,6 +120,7 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
       hostId: 'current_user_id_simulado',
       contributionOption: _selectedContributionOption,
       predefinedItems: _predefinedItems,
+      allowPlusOne: _allowPlusOne, // NOVO: Passa o valor do switch
     );
 
     bool success = await _eventService.createEvent(newEvent);
@@ -128,11 +130,10 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
     });
 
     if (success) {
-      // NOVO: Agendando um lembrete para o anfitrião.
       _notificationService.scheduleEventReminder(
         newEvent,
         'Seu evento "${newEvent.title}" se aproxima!',
-        const Duration(days: 1), // Lembrete 1 dia antes
+        const Duration(days: 1),
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -147,8 +148,7 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
   }
 
   @override
-  Widget build(BuildContext
-      context) {
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Criar Novo Evento'),
@@ -201,6 +201,18 @@ class _EventCreationScreenState extends State<EventCreationScreen> {
                       prefixIcon: Icon(Icons.description),
                     ),
                     maxLines: 3,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // NOVO: Switch para permitir ou não acompanhantes (+1)
+                  SwitchListTile(
+                    title: const Text('Permitir Convidados levarem Acompanhantes (+1)'),
+                    value: _allowPlusOne,
+                    onChanged: (bool newValue) {
+                      setState(() {
+                        _allowPlusOne = newValue;
+                      });
+                    },
                   ),
                   const SizedBox(height: 24),
 
