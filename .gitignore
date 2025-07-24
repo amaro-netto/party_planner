@@ -43,7 +43,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/home/user/myapp/android/
+/home/user/myapp/test/
+/home/user/myapp/web/
+/home/user/myapp/.vscode/
+/home/user/myapp/.idx/
 
 #API CHAVES
 lib/firebase_options.dart
 android/app/google-services.json
+./firebase.json/
