@@ -4,6 +4,8 @@ import 'package:party_planner/models/event.dart';
 import 'package:party_planner/services/event_service.dart';
 import 'package:party_planner/screens/event_creation_screen.dart';
 import 'package:party_planner/screens/event_details_screen.dart';
+import 'package:party_planner/services/auth_service.dart'; // NOVO: Importa o serviço de autenticação
+import 'package:party_planner/screens/login_screen.dart'; // NOVO: Importa a tela de login
 
 // A tela de dashboard do administrador, que é um StatefulWidget
 // porque ela vai carregar uma lista de eventos que pode mudar.
@@ -17,6 +19,7 @@ class AdminDashboardScreen extends StatefulWidget {
 // O estado da tela de dashboard.
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final EventService _eventService = EventService();
+  final AuthService _authService = AuthService(); // NOVO: Instância do serviço de autenticação
   late Future<List<Event>> _eventsFuture;
 
   @override
@@ -30,6 +33,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     setState(() {
       _eventsFuture = _eventService.getEvents();
     });
+  }
+
+  // NOVO: Método para realizar o logout
+  void _logout() async {
+    await _authService.logout(); // Chama o método de logout simulado
+    // Navega de volta para a tela de login e remove todas as rotas anteriores.
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (Route<dynamic> route) => false, // Isso remove todas as rotas anteriores
+    );
   }
 
   @override
@@ -51,6 +64,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 _refreshEvents();
               }
             },
+          ),
+          // NOVO: Botão de Logout
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _logout, // Chama o método de logout
           ),
         ],
       ),

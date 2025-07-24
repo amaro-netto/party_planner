@@ -19,4 +19,12 @@ class AuthService {
     debugPrint('Usuário $email logado com sucesso (simulado).');
     return true;
   }
+
+  // NOVO: Método para simular o logout do usuário.
+  Future<void> logout() async {
+    debugPrint('Simulando logout do usuário.');
+    await Future.delayed(const Duration(seconds: 1)); // Pequeno atraso para simular operação
+    // No futuro, aqui você chamaria Firebase Auth.instance.signOut();
+    debugPrint('Logout simulado concluído.');
+  }
 }
