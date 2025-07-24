@@ -5,7 +5,7 @@ import 'package:party_planner/screens/register_screen.dart';
 import 'package:party_planner/screens/admin_dashboard_screen.dart';
 import 'package:party_planner/screens/guest_invitation_screen.dart';
 import 'package:party_planner/services/event_service.dart';
-import 'package:party_planner/models/event.dart'; // Mantido, pois é usado para o tipo Event
+// REMOVIDO: import 'package:party_planner/models/event.dart'; // Removido, pois o tipo Event é inferido ou usado indiretamente via EventService
 
 // A tela de login, que é um StatefulWidget.
 class LoginScreen extends StatefulWidget {
@@ -66,7 +66,10 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _isLoading = true;
     });
-    var events = await _eventService.getEvents();
+    // 'Event' é o tipo de retorno de _eventService.getEvents(), então o import não é estritamente necessário
+    // se o tipo for inferido. A remoção do import de Event está ok aqui.
+    var events = await _eventService.getEvents(); 
+
     setState(() {
       _isLoading = false;
     });
@@ -119,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
               _isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
-                      onPressed: _isLoading ? null : _login, // Desabilita o botão enquanto carrega
+                      onPressed: _isLoading ? null : _login,
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(
@@ -130,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: _isLoading ? null : () { // Desabilita o botão enquanto carrega
+                onPressed: _isLoading ? null : () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const RegisterScreen()),
@@ -140,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: _isLoading ? null : _navigateToGuestInvitation, // Desabilita o botão enquanto carrega
+                onPressed: _isLoading ? null : _navigateToGuestInvitation,
                 child: const Text('Acessar como Convidado (Teste)', style: TextStyle(color: Colors.blue)),
               ),
             ],
