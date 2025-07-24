@@ -72,6 +72,21 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     }
   }
 
+  // NOVO: Método para remover um convidado
+  void _removeGuest(String guestId) async {
+    bool success = await _eventService.removeGuestFromEvent(widget.event.id, guestId);
+    if (success) {
+      _loadEventData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Convidado removido com sucesso!')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Falha ao remover convidado.')),
+      );
+    }
+  }
+
   void _addNewItemToCommittedList() async {
     if (_newItemNameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -102,6 +117,22 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       );
     }
   }
+
+  // NOVO: Método para remover um item
+  void _removeItem(String itemId) async {
+    bool success = await _eventService.removeItemFromEvent(widget.event.id, itemId);
+    if (success) {
+      _loadEventData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Item removido com sucesso!')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Falha ao remover item.')),
+      );
+    }
+  }
+
 
   Widget _buildGuestList() {
     return FutureBuilder<List<Guest>>(
@@ -135,7 +166,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               const SizedBox(height: 16),
               ListView.builder(
                 shrinkWrap: true,
-                // CORRIGIDO: Nome da classe de physics
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: guests.length,
                 itemBuilder: (context, index) {
@@ -155,59 +185,70 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                             Text('Trazendo: ${guest.itemBringing}'),
                         ],
                       ),
-                      trailing: Column(
-                        mainAxisSize: MainAxisSize.min,
+                      trailing: Row( // Usar Row para colocar Checkbox e botão de remover lado a lado
+                        mainAxisSize: MainAxisSize.min, // Para não ocupar espaço demais
                         children: [
-                          Checkbox(
-                            value: guest.isAttending,
-                            onChanged: (bool? newValue) async {
-                              final updatedGuest = Guest(
-                                id: guest.id,
-                                name: guest.name,
-                                email: guest.email,
-                                isAttending: newValue!,
-                                plusOneCount: guest.plusOneCount,
-                                itemBringing: guest.itemBringing,
-                              );
-                              await _eventService.updateGuest(widget.event.id, updatedGuest);
-                              _loadEventData();
-                            },
-                          ),
-                          Row(
+                          Column( // Checkbox e botões de +/-
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              IconButton(
-                                icon: const Icon(Icons.remove_circle_outline),
-                                onPressed: guest.plusOneCount > 0 ? () async {
+                              Checkbox(
+                                value: guest.isAttending,
+                                onChanged: (bool? newValue) async {
                                   final updatedGuest = Guest(
                                     id: guest.id,
                                     name: guest.name,
                                     email: guest.email,
-                                    isAttending: guest.isAttending,
-                                    plusOneCount: guest.plusOneCount - 1,
-                                    itemBringing: guest.itemBringing,
-                                  );
-                                  await _eventService.updateGuest(widget.event.id, updatedGuest);
-                                  _loadEventData();
-                                } : null,
-                              ),
-                              Text('${guest.plusOneCount}'),
-                              IconButton(
-                                icon: const Icon(Icons.add_circle_outline),
-                                onPressed: () async {
-                                  final updatedGuest = Guest(
-                                    id: guest.id,
-                                    name: guest.name,
-                                    email: guest.email,
-                                    isAttending: guest.isAttending,
-                                    plusOneCount: guest.plusOneCount + 1,
+                                    isAttending: newValue!,
+                                    plusOneCount: guest.plusOneCount,
                                     itemBringing: guest.itemBringing,
                                   );
                                   await _eventService.updateGuest(widget.event.id, updatedGuest);
                                   _loadEventData();
                                 },
                               ),
+                              if (widget.event.allowPlusOne) // Mostra +/buttons apenas se permitido
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.remove_circle_outline),
+                                      onPressed: guest.plusOneCount > 0 ? () async {
+                                        final updatedGuest = Guest(
+                                          id: guest.id,
+                                          name: guest.name,
+                                          email: guest.email,
+                                          isAttending: guest.isAttending,
+                                          plusOneCount: guest.plusOneCount - 1,
+                                          itemBringing: guest.itemBringing,
+                                        );
+                                        await _eventService.updateGuest(widget.event.id, updatedGuest);
+                                        _loadEventData();
+                                      } : null,
+                                    ),
+                                    Text('${guest.plusOneCount}'),
+                                    IconButton(
+                                      icon: const Icon(Icons.add_circle_outline),
+                                      onPressed: () async {
+                                        final updatedGuest = Guest(
+                                          id: guest.id,
+                                          name: guest.name,
+                                          email: guest.email,
+                                          isAttending: guest.isAttending,
+                                          plusOneCount: guest.plusOneCount + 1,
+                                          itemBringing: guest.itemBringing,
+                                        );
+                                        await _eventService.updateGuest(widget.event.id, updatedGuest);
+                                        _loadEventData();
+                                      },
+                                    ),
+                                  ],
+                                ),
                             ],
+                          ),
+                          // NOVO: Botão de exclusão de convidado
+                          IconButton(
+                            icon: const Icon(Icons.delete_forever, color: Colors.red),
+                            onPressed: () => _removeGuest(guest.id),
                           ),
                         ],
                       ),
@@ -241,7 +282,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           final items = snapshot.data!;
           return ListView.builder(
             shrinkWrap: true,
-            // CORRIGIDO: Nome da classe de physics
             physics: const NeverScrollableScrollPhysics(),
             itemCount: items.length,
             itemBuilder: (context, index) {
@@ -254,12 +294,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ? Text('Quantidade Trazida: ${item.quantityNeeded}')
                       : null,
                   trailing: IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Deletar item: ${item.name}')),
-                      );
-                    },
+                    icon: const Icon(Icons.delete, color: Colors.red), // NOVO: Botão de exclusão de item
+                    onPressed: () => _removeItem(item.id),
                   ),
                 ),
               );
@@ -270,20 +306,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  // NOVO: Método para construir o resumo de itens e análise
   Widget _buildItemSummaryAndAnalysis() {
     return FutureBuilder<List<Item>>(
-      future: _itemsFuture, // Usa o mesmo Future dos itens trazidos pelos convidados
+      future: _itemsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const CircularProgressIndicator(); // Mostra carregamento
+          return const CircularProgressIndicator();
         } else if (snapshot.hasError) {
           return Text('Erro ao carregar totais de itens: ${snapshot.error}');
         } else if (!snapshot.hasData) {
           return const Text('Nenhum dado de item disponível.');
         } else {
           final List<Item> committedItems = snapshot.data!;
-          // Precisa esperar o _guestsFuture também para ter o total de participantes
           return FutureBuilder<List<Guest>>(
             future: _guestsFuture,
             builder: (context, guestSnapshot) {
@@ -299,7 +333,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 final int totalPlusOnes = guests.where((g) => g.isAttending).fold(0, (sum, g) => sum + g.plusOneCount);
                 final int totalAttendees = _calculatorService.calculateTotalAttendees(confirmedGuests, totalPlusOnes);
 
-                // Calcula o total de bebidas e carnes que os convidados se comprometeram a trazer
                 double committedBeverageLiters = 0.0;
                 double committedMeatKg = 0.0;
 
@@ -314,11 +347,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   }
                 }
 
-                // Obtém as estimativas necessárias
                 final double neededBeverageLiters = _calculatorService.calculateBeveragePerGuest(totalAttendees);
                 final double neededMeatKg = _calculatorService.calculateMeatPerGuest(totalAttendees);
 
-                // Lógica de Suficiência
                 Color beverageColor = Colors.black;
                 String beverageStatus = '';
                 if (committedBeverageLiters >= neededBeverageLiters * 0.9) {
@@ -451,7 +482,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 ],
               ),
 
-            // NOVO: Adiciona a seção de resumo e análise de itens aqui
+            // Seção de Resumo e Análise de Itens
             _buildItemSummaryAndAnalysis(),
 
             const Text(

@@ -1,12 +1,12 @@
 // lib/services/event_service.dart
 import 'package:flutter/foundation.dart';
-import 'package:party_planner/models/event.dart'; // Importa o modelo de Evento (agora com novas props)
-import 'package:party_planner/models/guest.dart'; // NOVO: Importa o modelo de Convidado
-import 'package:party_planner/models/item.dart';   // NOVO: Importa o modelo de Item
+import 'package:party_planner/models/event.dart';
+import 'package:party_planner/models/guest.dart';
+import 'package:party_planner/models/item.dart';
 
 // Esta classe simula um serviço de dados para eventos, convidados e itens.
 class EventService {
-  // Lista de eventos simulados. Agora com convidados e itens pré-definidos para alguns.
+  // Lista de eventos simulados.
   final List<Event> _mockEvents = [
     Event(
       id: 'event1',
@@ -15,8 +15,9 @@ class EventService {
       date: DateTime.now().add(const Duration(days: 10)),
       description: 'Venha celebrar mais um ano de vida da Maria!',
       hostId: 'user123',
-      contributionOption: ItemContributionOption.predefinedList, // NOVO: Opção de contribuição
-      predefinedItems: ['Refrigerante', 'Salgadinhos', 'Bolo'], // NOVO: Itens pré-definidos
+      contributionOption: ItemContributionOption.predefinedList,
+      predefinedItems: ['Refrigerante', 'Salgadinhos', 'Bolo'],
+      allowPlusOne: true, // Adicionado como padrão
     ),
     Event(
       id: 'event2',
@@ -25,8 +26,9 @@ class EventService {
       date: DateTime.now().add(const Duration(days: 25)),
       description: 'Churrasco de confraternização anual.',
       hostId: 'user123',
-      contributionOption: ItemContributionOption.guestChooses, // NOVO: Opção de contribuição
-      predefinedItems: [], // NOVO: Lista vazia
+      contributionOption: ItemContributionOption.guestChooses,
+      predefinedItems: [],
+      allowPlusOne: true,
     ),
     Event(
       id: 'event3',
@@ -35,13 +37,13 @@ class EventService {
       date: DateTime.now().add(const Duration(days: 5)),
       description: 'Vamos dar as boas-vindas ao nosso novo colega, João!',
       hostId: 'user456',
-      contributionOption: ItemContributionOption.none, // NOVO: Opção de contribuição
-      predefinedItems: [], // NOVO: Lista vazia
+      contributionOption: ItemContributionOption.none,
+      predefinedItems: [],
+      allowPlusOne: false, // Exemplo de evento que não permite +1
     ),
   ];
 
-  // NOVO: Um mapa para simular convidados por ID do evento.
-  // Chave: Event ID, Valor: Lista de Guests.
+  // Um mapa para simular convidados por ID do evento.
   final Map<String, List<Guest>> _mockGuestsByEvent = {
     'event1': [
       Guest(id: 'g1', name: 'João Silva', email: 'joao@example.com', isAttending: true, plusOneCount: 1, itemBringing: 'Bolo'),
@@ -51,14 +53,12 @@ class EventService {
       Guest(id: 'g3', name: 'Pedro Martins', email: 'pedro@example.com', isAttending: true, plusOneCount: 0, itemBringing: 'Carne de Porco'),
       Guest(id: 'g4', name: 'Mariana Costa', email: 'mariana@example.com', isAttending: true, plusOneCount: 2, itemBringing: 'Cerveja'),
     ],
+    'event3': [], // Inicialmente sem convidados
   };
 
-  // NOVO: Um mapa para simular itens a levar por ID do evento (itens que convidados estão levando).
-  // Chave: Event ID, Valor: Lista de Items.
+  // Um mapa para simular itens que convidados se comprometeram a levar.
   final Map<String, List<Item>> _mockItemsByEvent = {
     'event1': [
-      // Estes são os itens que os convidados JÁ SE COMPROMETERAM a levar
-      // (não confundir com predefinedItems do Evento).
       Item(id: 'ci1', name: 'Refrigerante', quantityNeeded: 0),
       Item(id: 'ci2', name: 'Salgadinhos', quantityNeeded: 0),
     ],
@@ -66,9 +66,9 @@ class EventService {
       Item(id: 'ci3', name: 'Carne Bovina', quantityNeeded: 0),
       Item(id: 'ci4', name: 'Refrigerante', quantityNeeded: 0),
     ],
+    'event3': [], // Inicialmente sem itens
   };
 
-  // Método para simular a obtenção de eventos.
   Future<List<Event>> getEvents() async {
     debugPrint('Buscando eventos (simulado)...');
     await Future.delayed(const Duration(seconds: 1));
@@ -76,33 +76,28 @@ class EventService {
     return _mockEvents;
   }
 
-  // Método para simular a criação de um novo evento.
-  // Agora o 'event' já incluirá 'contributionOption' e 'predefinedItems'.
   Future<bool> createEvent(Event event) async {
     debugPrint('Criando evento: ${event.title} (simulado)...');
     await Future.delayed(const Duration(seconds: 1));
-    _mockEvents.add(event); // Adiciona à lista simulada
-    _mockGuestsByEvent[event.id] = []; // Inicializa a lista de convidados para o novo evento
-    _mockItemsByEvent[event.id] = [];   // Inicializa a lista de itens levados pelos convidados
+    _mockEvents.add(event);
+    _mockGuestsByEvent[event.id] = [];
+    _mockItemsByEvent[event.id] = [];
     debugPrint('Evento ${event.title} criado com sucesso (simulado).');
     return true;
   }
 
-  // Método para simular a obtenção de convidados para um evento específico.
   Future<List<Guest>> getGuestsForEvent(String eventId) async {
     debugPrint('Buscando convidados para o evento $eventId (simulado)...');
     await Future.delayed(const Duration(milliseconds: 500));
     return _mockGuestsByEvent[eventId] ?? [];
   }
 
-  // Método para simular a obtenção de itens para um evento específico.
   Future<List<Item>> getItemsForEvent(String eventId) async {
     debugPrint('Buscando itens levados pelos convidados para o evento $eventId (simulado)...');
     await Future.delayed(const Duration(milliseconds: 500));
     return _mockItemsByEvent[eventId] ?? [];
   }
 
-  // Método para simular a adição de um convidado a um evento.
   Future<bool> addGuestToEvent(String eventId, Guest guest) async {
     debugPrint('Adicionando convidado ${guest.name} ao evento $eventId (simulado)...');
     await Future.delayed(const Duration(milliseconds: 500));
@@ -111,7 +106,6 @@ class EventService {
     return true;
   }
 
-  // Método para simular a atualização de um convidado.
   Future<bool> updateGuest(String eventId, Guest updatedGuest) async {
     debugPrint('Atualizando convidado ${updatedGuest.name} no evento $eventId (simulado)...');
     await Future.delayed(const Duration(milliseconds: 500));
@@ -128,9 +122,23 @@ class EventService {
     return false;
   }
 
-  // Método para simular a adição/atualização de um item (que o anfitrião precisa que levem ou que um convidado vai levar).
-  // Este método é mais genérico e pode ser usado para adicionar tanto itens pré-definidos
-  // (na criação do evento) quanto itens que convidados se comprometem a trazer.
+  // NOVO: Método para remover um convidado.
+  Future<bool> removeGuestFromEvent(String eventId, String guestId) async {
+    debugPrint('Removendo convidado $guestId do evento $eventId (simulado)...');
+    await Future.delayed(const Duration(milliseconds: 500));
+    final guests = _mockGuestsByEvent[eventId];
+    if (guests != null) {
+      final initialLength = guests.length;
+      guests.removeWhere((g) => g.id == guestId);
+      if (guests.length < initialLength) {
+        debugPrint('Convidado $guestId removido com sucesso (simulado).');
+        return true;
+      }
+    }
+    debugPrint('Falha ao remover convidado $guestId.');
+    return false;
+  }
+
   Future<bool> addOrUpdateCommittedItem(String eventId, Item item) async {
     debugPrint('Adicionando/Atualizando item ${item.name} para o evento $eventId (simulado)...');
     await Future.delayed(const Duration(milliseconds: 500));
@@ -138,15 +146,32 @@ class EventService {
     if (eventItems != null) {
       final existingItemIndex = eventItems.indexWhere((i) => i.name.toLowerCase() == item.name.toLowerCase());
       if (existingItemIndex != -1) {
-        eventItems[existingItemIndex] = item; // Substitui o item existente
+        eventItems[existingItemIndex] = item;
         debugPrint('Item ${item.name} atualizado com sucesso (simulado).');
       } else {
-        eventItems.add(item); // Adiciona como novo
+        eventItems.add(item);
         debugPrint('Item ${item.name} adicionado como novo (simulado).');
       }
       return true;
     }
     debugPrint('Falha ao adicionar/atualizar item ${item.name}.');
+    return false;
+  }
+
+  // NOVO: Método para remover um item.
+  Future<bool> removeItemFromEvent(String eventId, String itemId) async {
+    debugPrint('Removendo item $itemId do evento $eventId (simulado)...');
+    await Future.delayed(const Duration(milliseconds: 500));
+    final items = _mockItemsByEvent[eventId];
+    if (items != null) {
+      final initialLength = items.length;
+      items.removeWhere((i) => i.id == itemId);
+      if (items.length < initialLength) {
+        debugPrint('Item $itemId removido com sucesso (simulado).');
+        return true;
+      }
+    }
+    debugPrint('Falha ao remover item $itemId.');
     return false;
   }
 }
