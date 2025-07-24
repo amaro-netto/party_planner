@@ -1,6 +1,6 @@
 // lib/screens/event_details_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // NOVO: Para copiar para a área de transferência
+import 'package:flutter/services.dart'; // Para copiar para a área de transferência
 import 'package:party_planner/models/event.dart';
 import 'package:party_planner/models/guest.dart';
 import 'package:party_planner/models/item.dart';
@@ -132,19 +132,15 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     }
   }
 
-  // NOVO: Método para gerar e copiar o link de convite simulado
   void _generateAndCopyInviteLink() async {
-    // Em um app real, você geraria um link único e seguro, talvez com um token.
-    // Por enquanto, vamos usar uma URL base com o ID do evento.
-    // A porta 9002 é a que estamos usando para o servidor web no seu ambiente.
-    final String inviteLink = 'http://localhost:9002/#/invite/${widget.event.id}'; // Exemplo de URL com hash
+    final String inviteLink = 'http://localhost:9002/#/invite/${widget.event.id}';
 
-    await Clipboard.setData(ClipboardData(text: inviteLink)); // Copia para a área de transferência
+    await Clipboard.setData(ClipboardData(text: inviteLink));
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Link do convite copiado para a área de transferência!')),
     );
-    debugPrint('Link de Convite Gerado: $inviteLink'); // Para ver no console
+    debugPrint('Link de Convite Gerado: $inviteLink');
   }
 
 
@@ -162,7 +158,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           final guests = snapshot.data!;
 
           final int confirmedGuests = guests.where((g) => g.isAttending).length;
-          final int totalPlusOnes = guests.where((g) => g.isAttending).fold(0, (sum, g) => sum + g.plusOneCount);
+          final int totalPlusOnes = guests.where((g) => g.isAttended).fold(0, (sum, g) => sum + g.plusOneCount);
           final int totalAttendees = _calculatorService.calculateTotalAttendees(confirmedGuests, totalPlusOnes);
 
           final double estimatedBeverage = _calculatorService.calculateBeveragePerGuest(totalAttendees);
@@ -495,7 +491,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 ],
               ),
 
-            // NOVO: Botão para gerar e copiar o link de convite
             ElevatedButton.icon(
               onPressed: _generateAndCopyInviteLink,
               icon: const Icon(Icons.share),
@@ -509,7 +504,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Seção de Resumo e Análise de Itens
             _buildItemSummaryAndAnalysis(),
 
             const Text(

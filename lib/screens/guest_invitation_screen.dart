@@ -1,13 +1,12 @@
 // lib/screens/guest_invitation_screen.dart
 import 'package:flutter/material.dart';
-import 'package:party_planner/models/event.dart'; // Importa o modelo Evento
-import 'package:party_planner/models/guest.dart'; // Importa o modelo Convidado
-import 'package:party_planner/services/event_service.dart'; // Importa o EventService
-// Removidos imports não utilizados: Item e Collection.
+import 'package:party_planner/models/event.dart';
+import 'package:party_planner/models/guest.dart';
+import 'package:party_planner/services/event_service.dart';
 
 class GuestInvitationScreen extends StatefulWidget {
-  final Event event; // O evento para o qual o convidado foi convidado.
-  final Guest? guest; // O objeto Guest correspondente ao convidado (pode ser nulo se for um link genérico)
+  final Event event;
+  final Guest? guest;
 
   const GuestInvitationScreen({required this.event, this.guest, super.key});
 
@@ -17,25 +16,20 @@ class GuestInvitationScreen extends StatefulWidget {
 
 class _GuestInvitationScreenState extends State<GuestInvitationScreen> {
   final EventService _eventService = EventService();
-  late Guest _currentGuest; // O convidado que está visualizando o convite
+  late Guest _currentGuest;
 
-  // Controladores para o campo "o que você vai trazer?"
   final TextEditingController _guestItemBringingController = TextEditingController();
 
-  // Variável para a contagem de acompanhantes
   int _plusOneCount = 0;
-  // Variável para a escolha de item para GuestChooses
   String? _selectedGuestChosenItem;
-
+  bool _isLoading = false; // NOVO: Variável de carregamento para esta tela
 
   @override
   void initState() {
     super.initState();
-    // Inicializa _currentGuest. Se já tem um guest, usa ele. Senão, cria um mock.
     if (widget.guest != null) {
       _currentGuest = widget.guest!;
     } else {
-      // Simulando um convidado se o acesso for por um link genérico sem guestId
       _currentGuest = Guest(
         id: 'guest_simulado_${DateTime.now().millisecondsSinceEpoch}',
         name: 'Convidado Teste',
@@ -44,64 +38,72 @@ class _GuestInvitationScreenState extends State<GuestInvitationScreen> {
         plusOneCount: 0,
         itemBringing: '',
       );
-      // Opcional: Adicionar este convidado simulado ao evento no EventService
+      // Adiciona este convidado simulado ao evento no EventService (para que o anfitrião o veja)
       _eventService.addGuestToEvent(widget.event.id, _currentGuest);
     }
 
-    // Inicializa os estados com os valores atuais do convidado
     _plusOneCount = _currentGuest.plusOneCount;
     _guestItemBringingController.text = _currentGuest.itemBringing ?? '';
-    _selectedGuestChosenItem = _currentGuest.itemBringing; // Inicializa a seleção do dropdown
+    _selectedGuestChosenItem = _currentGuest.itemBringing;
   }
 
-  // Método para processar a confirmação de presença (RSVP)
   Future<void> _handleRsvp(bool willAttend) async {
-    setState(() {
-      _currentGuest.isAttending = willAttend; // Atualiza o status
-      if (!willAttend) { // Se não vai, zera acompanhantes e item
-        _plusOneCount = 0;
-        _guestItemBringingController.clear();
-        _selectedGuestChosenItem = null;
-        _currentGuest.plusOneCount = 0;
-        _currentGuest.itemBringing = null;
-      }
-    });
+    setState(() { _isLoading = true; }); // Ativa carregamento
+    _currentGuest.isAttending = willAttend;
+    if (!willAttend) {
+      _plusOneCount = 0;
+      _guestItemBringingController.clear();
+      _selectedGuestChosenItem = null;
+      _currentGuest.plusOneCount = 0;
+      _currentGuest.itemBringing = null;
+    }
     await _updateGuestStatus();
-  }
+    setState(() { _isLoading = false; }); // Desativa carregamento
 
-  // Método para atualizar o número de acompanhantes
-  void _updatePlusOneCount(int change) async {
-    setState(() {
-      _plusOneCount = (_plusOneCount + change).clamp(0, 10); // Limita entre 0 e 10
-      _currentGuest.plusOneCount = _plusOneCount;
-    });
-    await _updateGuestStatus();
-  }
-
-  // Método para processar o item que o convidado escolheu (opção "guestChooses")
-  Future<void> _submitGuestChosenItem() async {
-    setState(() {
-      _currentGuest.itemBringing = _guestItemBringingController.text.trim();
-    });
-    await _updateGuestStatus();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sua contribuição foi registrada!')),
+      SnackBar(content: Text('Sua presença foi ${willAttend ? 'confirmada' : 'cancelada'}!')),
     );
   }
 
-  // Método para processar a seleção de item da lista pré-definida (opção "predefinedList")
-  Future<void> _selectPredefinedItem(String? item) async {
-    setState(() {
-      _selectedGuestChosenItem = item;
-      _currentGuest.itemBringing = item;
-    });
+  void _updatePlusOneCount(int change) async {
+    setState(() { _isLoading = true; }); // Ativa carregamento
+    _plusOneCount = (_plusOneCount + change).clamp(0, 10);
+    _currentGuest.plusOneCount = _plusOneCount;
     await _updateGuestStatus();
+    setState(() { _isLoading = false; }); // Desativa carregamento
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Acompanhantes atualizados para $_plusOneCount.')),
+    );
+  }
+
+  Future<void> _submitGuestChosenItem() async {
+    if (_guestItemBringingController.text.trim().isEmpty) { // Validação
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, digite o item que você vai trazer.')),
+      );
+      return;
+    }
+    setState(() { _isLoading = true; }); // Ativa carregamento
+    _currentGuest.itemBringing = _guestItemBringingController.text.trim();
+    await _updateGuestStatus();
+    setState(() { _isLoading = false; }); // Desativa carregamento
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Sua contribuição foi registrada!')),
+    );
+    FocusScope.of(context).unfocus(); // Esconde o teclado
+  }
+
+  Future<void> _selectPredefinedItem(String? item) async {
+    setState(() { _isLoading = true; }); // Ativa carregamento
+    _selectedGuestChosenItem = item;
+    _currentGuest.itemBringing = item;
+    await _updateGuestStatus();
+    setState(() { _isLoading = false; }); // Desativa carregamento
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Você selecionou: ${item ?? 'Nada'}')),
     );
   }
 
-  // Método auxiliar para atualizar o convidado no serviço.
   Future<void> _updateGuestStatus() async {
     bool success = await _eventService.updateGuest(widget.event.id, _currentGuest);
     if (!success) {
@@ -111,7 +113,6 @@ class _GuestInvitationScreenState extends State<GuestInvitationScreen> {
     }
   }
 
-  // Método para obter a descrição da opção de contribuição
   String _getContributionOptionDescription(ItemContributionOption option) {
     switch (option) {
       case ItemContributionOption.predefinedList:
@@ -132,182 +133,176 @@ class _GuestInvitationScreenState extends State<GuestInvitationScreen> {
         title: const Text('Seu Convite'),
         backgroundColor: Theme.of(context).primaryColor,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            // Detalhes do Evento
-            Text(
-              widget.event.title,
-              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              widget.event.description,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Local: ${widget.event.location}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Quando: ${widget.event.date.day}/${widget.event.date.month}/${widget.event.date.year} às ${widget.event.date.hour.toString().padLeft(2, '0')}:${widget.event.date.minute.toString().padLeft(2, '0')}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 24),
-
-            // Seção RSVP (Confirmação de Presença)
-            const Text(
-              'Você vai comparecer?',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: _currentGuest.isAttending ? null : () => _handleRsvp(true),
-                  icon: const Icon(Icons.check_circle),
-                  label: Text(_currentGuest.isAttending ? 'Confirmado!' : 'Sim, vou!'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _currentGuest.isAttending ? Colors.green : Colors.grey,
-                  ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: !_currentGuest.isAttending ? null : () => _handleRsvp(false),
-                  icon: const Icon(Icons.cancel),
-                  label: Text(!_currentGuest.isAttending ? 'Não vou.' : 'Desistir'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: !_currentGuest.isAttending ? Colors.red : Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Seção Acompanhantes (visível apenas se o convidado confirmar presença E o anfitrião permitir)
-            if (_currentGuest.isAttending && widget.event.allowPlusOne)
-              Column(
+      body: _isLoading // Exibe um CircularProgressIndicator se estiver carregando
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
+                  Text(
+                    widget.event.title,
+                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    widget.event.description,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Local: ${widget.event.location}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Quando: ${widget.event.date.day}/${widget.event.date.month}/${widget.event.date.year} às ${widget.event.date.hour.toString().padLeft(2, '0')}:${widget.event.date.minute.toString().padLeft(2, '0')}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 24),
+
                   const Text(
-                    'Quantas pessoas você vai levar?',
+                    'Você vai comparecer?',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.remove_circle_outline, size: 30),
-                        onPressed: _plusOneCount > 0 ? () => _updatePlusOneCount(-1) : null,
+                      ElevatedButton.icon(
+                        onPressed: _currentGuest.isAttending || _isLoading ? null : () => _handleRsvp(true), // Desabilita se já confirmado ou carregando
+                        icon: const Icon(Icons.check_circle),
+                        label: Text(_currentGuest.isAttending ? 'Confirmado!' : 'Sim, vou!'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _currentGuest.isAttending ? Colors.green : Colors.grey,
+                        ),
                       ),
-                      Text(
-                        '$_plusOneCount',
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.add_circle_outline, size: 30),
-                        onPressed: () => _updatePlusOneCount(1),
+                      ElevatedButton.icon(
+                        onPressed: !_currentGuest.isAttending || _isLoading ? null : () => _handleRsvp(false), // Desabilita se já negado ou carregando
+                        icon: const Icon(Icons.cancel),
+                        label: Text(!_currentGuest.isAttending ? 'Não vou.' : 'Desistir'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: !_currentGuest.isAttending ? Colors.red : Colors.grey,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                ],
-              )
-            // AQUI ESTÁ A CORREÇÃO DE SINTAXE. O 'else if' precisa de um corpo de widget.
-            // Coloquei a mensagem dentro de um `Column` para ser mais explícito,
-            // embora um `Padding` diretamente já funcione.
-            else if (_currentGuest.isAttending && !widget.event.allowPlusOne)
-              const Column( // Adicionei Column para garantir que o widget é bem formado
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(bottom: 24.0),
-                    child: Text(
-                      'O anfitrião não permite convidados adicionais para este evento.',
-                      style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey),
+
+                  if (_currentGuest.isAttending && widget.event.allowPlusOne)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Quantas pessoas você vai levar?',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.remove_circle_outline, size: 30),
+                              onPressed: _plusOneCount > 0 && !_isLoading ? () => _updatePlusOneCount(-1) : null, // Desabilita se carregando
+                            ),
+                            Text(
+                              '$_plusOneCount',
+                              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_outline, size: 30),
+                              onPressed: !_isLoading ? () => _updatePlusOneCount(1) : null, // Desabilita se carregando
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    )
+                  else if (_currentGuest.isAttending && !widget.event.allowPlusOne)
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.only(bottom: 24.0),
+                          child: Text(
+                            'O anfitrião não permite convidados adicionais para este evento.',
+                            style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey),
+                          ),
+                        ),
+                      ],
                     ),
+
+                  const Text(
+                    'Contribuição de Itens:',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _getContributionOptionDescription(currentOption),
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 16),
+
+                  if (_currentGuest.isAttending)
+                    Builder(
+                      builder: (context) {
+                        if (currentOption == ItemContributionOption.predefinedList) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Escolha um item da lista do anfitrião:', style: TextStyle(fontSize: 16)),
+                              const SizedBox(height: 8),
+                              DropdownButtonFormField<String>(
+                                value: _selectedGuestChosenItem ?? (widget.event.predefinedItems.isNotEmpty ? widget.event.predefinedItems.first : null),
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  labelText: 'Item a trazer',
+                                ),
+                                items: widget.event.predefinedItems.map((item) {
+                                  return DropdownMenuItem(
+                                    value: item,
+                                    child: Text(item),
+                                  );
+                                }).toList(),
+                                onChanged: _isLoading ? null : _selectPredefinedItem, // Desabilita enquanto carrega
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                          );
+                        } else if (currentOption == ItemContributionOption.guestChooses) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('O que você gostaria de trazer?', style: TextStyle(fontSize: 16)),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: _guestItemBringingController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Ex: Refrigerante, Salada de Batata',
+                                  border: OutlineInputBorder(),
+                                ),
+                                onSubmitted: (_) => _submitGuestChosenItem(),
+                              ),
+                              const SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: _isLoading ? null : _submitGuestChosenItem, // Desabilita enquanto carrega
+                                child: const Text('Confirmar Item'),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                          );
+                        } else { // ItemContributionOption.none
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text('Que ótimo! O anfitrião não precisa que você leve nada.', style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic)),
+                          );
+                        }
+                      },
+                    ),
+                  const SizedBox(height: 24),
                 ],
               ),
-
-            // Seção Contribuição de Itens
-            const Text(
-              'Contribuição de Itens:',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
-            Text(
-              _getContributionOptionDescription(currentOption),
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-
-            // Lógica para exibir a interface de contribuição baseada na opção do anfitrião
-            if (_currentGuest.isAttending)
-              Builder(
-                builder: (context) {
-                  if (currentOption == ItemContributionOption.predefinedList) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Escolha um item da lista do anfitrião:', style: TextStyle(fontSize: 16)),
-                        const SizedBox(height: 8),
-                        DropdownButtonFormField<String>(
-                          value: _selectedGuestChosenItem ?? (widget.event.predefinedItems.isNotEmpty ? widget.event.predefinedItems.first : null), // Correção para firstOrNull
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            labelText: 'Item a trazer',
-                          ),
-                          items: widget.event.predefinedItems.map((item) {
-                            return DropdownMenuItem(
-                              value: item,
-                              child: Text(item),
-                            );
-                          }).toList(),
-                          onChanged: _selectPredefinedItem,
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    );
-                  } else if (currentOption == ItemContributionOption.guestChooses) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('O que você gostaria de trazer?', style: TextStyle(fontSize: 16)),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _guestItemBringingController,
-                          decoration: const InputDecoration(
-                            labelText: 'Ex: Refrigerante, Salada de Batata',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        ElevatedButton(
-                          onPressed: _submitGuestChosenItem,
-                          child: const Text('Confirmar Item'),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    );
-                  } else { // ItemContributionOption.none
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text('Que ótimo! O anfitrião não precisa que você leve nada.', style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic)),
-                    );
-                  }
-                },
-              ),
-            const SizedBox(height: 24),
-
-          ],
-        ),
-      ),
     );
   }
 }

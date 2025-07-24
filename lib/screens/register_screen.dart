@@ -12,17 +12,22 @@ class RegisterScreen extends StatefulWidget {
 
 // O estado da tela de registro.
 class _RegisterScreenState extends State<RegisterScreen> {
-  // Controladores para pegar o texto dos campos de email, senha e confirmação de senha.
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
-  // Instância do nosso serviço de autenticação.
   final AuthService _authService = AuthService();
-  // Variável para controlar o estado de carregamento.
   bool _isLoading = false;
 
   // Método chamado quando o botão de registro é pressionado.
   Future<void> _register() async {
+    // Simula a validação de campos vazios.
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty || _confirmPasswordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, preencha todos os campos.')),
+      );
+      return;
+    }
+
     // Validação básica: verifica se as senhas são iguais.
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -35,7 +40,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _isLoading = true;
     });
 
-    // Chama o método de registro do nosso serviço de autenticação.
     bool success = await _authService.registerUser(
       _emailController.text,
       _passwordController.text,
@@ -103,7 +107,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               _isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
-                      onPressed: _register,
+                      onPressed: _isLoading ? null : _register, // Desabilita o botão enquanto carrega
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(
@@ -114,7 +118,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: () {
+                onPressed: _isLoading ? null : () { // Desabilita o botão enquanto carrega
                   Navigator.pop(context);
                 },
                 child: const Text('Já tem uma conta? Voltar para o Login.', style: TextStyle(color: Colors.deepPurple)),

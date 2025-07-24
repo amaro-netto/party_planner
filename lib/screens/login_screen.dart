@@ -5,9 +5,7 @@ import 'package:party_planner/screens/register_screen.dart';
 import 'package:party_planner/screens/admin_dashboard_screen.dart';
 import 'package:party_planner/screens/guest_invitation_screen.dart';
 import 'package:party_planner/services/event_service.dart';
-// import 'package:party_planner/models/event.dart'; // Mantido, pois é usado para o tipo Event
-// import 'package:party_planner/models/guest.dart'; // Removido: Não é usado diretamente aqui
-// import 'package:party_planner/models/item.dart';   // REMOVIDO: Este é o import não utilizado!
+import 'package:party_planner/models/event.dart'; // Mantido, pois é usado para o tipo Event
 
 // A tela de login, que é um StatefulWidget.
 class LoginScreen extends StatefulWidget {
@@ -30,6 +28,15 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
+    // Simula a validação de campos
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, preencha email e senha.')),
+      );
+      setState(() { _isLoading = false; });
+      return;
+    }
+
     bool success = await _authService.loginUser(
       _emailController.text,
       _passwordController.text,
@@ -40,6 +47,9 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Login realizado com sucesso! Redirecionando...')),
+      );
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
@@ -56,10 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _isLoading = true;
     });
-    // Pega o primeiro evento simulado para passar para a tela do convidado
-    // O import de 'package:party_planner/models/event.dart' ainda é necessário para o tipo 'Event'
-    var events = await _eventService.getEvents(); // Aqui ele retorna List<Event>
-
+    var events = await _eventService.getEvents();
     setState(() {
       _isLoading = false;
     });
@@ -71,11 +78,10 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nenhum evento simulado disponível para convite.')),
+        const SnackBar(content: Text('Nenhum evento simulado disponível para convite. Crie um como anfitrião primeiro.')),
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
               _isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
-                      onPressed: _login,
+                      onPressed: _isLoading ? null : _login, // Desabilita o botão enquanto carrega
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(
@@ -124,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: () {
+                onPressed: _isLoading ? null : () { // Desabilita o botão enquanto carrega
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const RegisterScreen()),
@@ -134,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: _isLoading ? null : _navigateToGuestInvitation,
+                onPressed: _isLoading ? null : _navigateToGuestInvitation, // Desabilita o botão enquanto carrega
                 child: const Text('Acessar como Convidado (Teste)', style: TextStyle(color: Colors.blue)),
               ),
             ],
