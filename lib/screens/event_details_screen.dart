@@ -157,8 +157,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         } else {
           final guests = snapshot.data!;
 
+          // CORREÇÃO: Usar 'isAttending'
           final int confirmedGuests = guests.where((g) => g.isAttending).length;
-          final int totalPlusOnes = guests.where((g) => g.isAttended).fold(0, (sum, g) => sum + g.plusOneCount);
+          final int totalPlusOnes = guests.where((g) => g.isAttending).fold(0, (sum, g) => sum + g.plusOneCount);
           final int totalAttendees = _calculatorService.calculateTotalAttendees(confirmedGuests, totalPlusOnes);
 
           final double estimatedBeverage = _calculatorService.calculateBeveragePerGuest(totalAttendees);
@@ -188,6 +189,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(guest.email),
+                          // CORREÇÃO: Usar 'isAttending'
                           Text('Vai? ${guest.isAttending ? 'Sim' : 'Não'}'),
                           if (guest.plusOneCount > 0)
                             Text('Acompanhantes: ${guest.plusOneCount}'),
@@ -202,6 +204,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Checkbox(
+                                // CORREÇÃO: Usar 'isAttending'
                                 value: guest.isAttending,
                                 onChanged: (bool? newValue) async {
                                   final updatedGuest = Guest(
