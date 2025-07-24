@@ -1,5 +1,6 @@
 // lib/screens/event_details_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // NOVO: Para copiar para a área de transferência
 import 'package:party_planner/models/event.dart';
 import 'package:party_planner/models/guest.dart';
 import 'package:party_planner/models/item.dart';
@@ -72,7 +73,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     }
   }
 
-  // NOVO: Método para remover um convidado
   void _removeGuest(String guestId) async {
     bool success = await _eventService.removeGuestFromEvent(widget.event.id, guestId);
     if (success) {
@@ -118,7 +118,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     }
   }
 
-  // NOVO: Método para remover um item
   void _removeItem(String itemId) async {
     bool success = await _eventService.removeItemFromEvent(widget.event.id, itemId);
     if (success) {
@@ -131,6 +130,21 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         const SnackBar(content: Text('Falha ao remover item.')),
       );
     }
+  }
+
+  // NOVO: Método para gerar e copiar o link de convite simulado
+  void _generateAndCopyInviteLink() async {
+    // Em um app real, você geraria um link único e seguro, talvez com um token.
+    // Por enquanto, vamos usar uma URL base com o ID do evento.
+    // A porta 9002 é a que estamos usando para o servidor web no seu ambiente.
+    final String inviteLink = 'http://localhost:9002/#/invite/${widget.event.id}'; // Exemplo de URL com hash
+
+    await Clipboard.setData(ClipboardData(text: inviteLink)); // Copia para a área de transferência
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Link do convite copiado para a área de transferência!')),
+    );
+    debugPrint('Link de Convite Gerado: $inviteLink'); // Para ver no console
   }
 
 
@@ -185,10 +199,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                             Text('Trazendo: ${guest.itemBringing}'),
                         ],
                       ),
-                      trailing: Row( // Usar Row para colocar Checkbox e botão de remover lado a lado
-                        mainAxisSize: MainAxisSize.min, // Para não ocupar espaço demais
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Column( // Checkbox e botões de +/-
+                          Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Checkbox(
@@ -206,7 +220,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                   _loadEventData();
                                 },
                               ),
-                              if (widget.event.allowPlusOne) // Mostra +/buttons apenas se permitido
+                              if (widget.event.allowPlusOne)
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -245,7 +259,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                 ),
                             ],
                           ),
-                          // NOVO: Botão de exclusão de convidado
                           IconButton(
                             icon: const Icon(Icons.delete_forever, color: Colors.red),
                             onPressed: () => _removeGuest(guest.id),
@@ -294,7 +307,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ? Text('Quantidade Trazida: ${item.quantityNeeded}')
                       : null,
                   trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red), // NOVO: Botão de exclusão de item
+                    icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: () => _removeItem(item.id),
                   ),
                 ),
@@ -481,6 +494,20 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   const SizedBox(height: 24),
                 ],
               ),
+
+            // NOVO: Botão para gerar e copiar o link de convite
+            ElevatedButton.icon(
+              onPressed: _generateAndCopyInviteLink,
+              icon: const Icon(Icons.share),
+              label: const Text('Gerar e Copiar Link de Convite'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
 
             // Seção de Resumo e Análise de Itens
             _buildItemSummaryAndAnalysis(),
