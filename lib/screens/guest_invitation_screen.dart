@@ -1,14 +1,13 @@
 // lib/screens/guest_invitation_screen.dart
 import 'package:flutter/material.dart';
-import 'package:party_planner/models/event.dart';
-import 'package:party_planner/models/guest.dart';
-import 'package:party_planner/models/item.dart';
-import 'package:party_planner/services/event_service.dart';
-import 'package:collection/collection.dart'; // Para firstOrNull
+import 'package:party_planner/models/event.dart'; // Importa o modelo Evento
+import 'package:party_planner/models/guest.dart'; // Importa o modelo Convidado
+import 'package:party_planner/services/event_service.dart'; // Importa o EventService
+// Removidos imports não utilizados: Item e Collection.
 
 class GuestInvitationScreen extends StatefulWidget {
-  final Event event;
-  final Guest? guest;
+  final Event event; // O evento para o qual o convidado foi convidado.
+  final Guest? guest; // O objeto Guest correspondente ao convidado (pode ser nulo se for um link genérico)
 
   const GuestInvitationScreen({required this.event, this.guest, super.key});
 
@@ -18,20 +17,25 @@ class GuestInvitationScreen extends StatefulWidget {
 
 class _GuestInvitationScreenState extends State<GuestInvitationScreen> {
   final EventService _eventService = EventService();
-  late Guest _currentGuest;
+  late Guest _currentGuest; // O convidado que está visualizando o convite
 
+  // Controladores para o campo "o que você vai trazer?"
   final TextEditingController _guestItemBringingController = TextEditingController();
 
+  // Variável para a contagem de acompanhantes
   int _plusOneCount = 0;
+  // Variável para a escolha de item para GuestChooses
   String? _selectedGuestChosenItem;
 
 
   @override
   void initState() {
     super.initState();
+    // Inicializa _currentGuest. Se já tem um guest, usa ele. Senão, cria um mock.
     if (widget.guest != null) {
       _currentGuest = widget.guest!;
     } else {
+      // Simulando um convidado se o acesso for por um link genérico sem guestId
       _currentGuest = Guest(
         id: 'guest_simulado_${DateTime.now().millisecondsSinceEpoch}',
         name: 'Convidado Teste',
@@ -40,17 +44,21 @@ class _GuestInvitationScreenState extends State<GuestInvitationScreen> {
         plusOneCount: 0,
         itemBringing: '',
       );
+      // Opcional: Adicionar este convidado simulado ao evento no EventService
       _eventService.addGuestToEvent(widget.event.id, _currentGuest);
     }
 
+    // Inicializa os estados com os valores atuais do convidado
     _plusOneCount = _currentGuest.plusOneCount;
     _guestItemBringingController.text = _currentGuest.itemBringing ?? '';
+    _selectedGuestChosenItem = _currentGuest.itemBringing; // Inicializa a seleção do dropdown
   }
 
+  // Método para processar a confirmação de presença (RSVP)
   Future<void> _handleRsvp(bool willAttend) async {
     setState(() {
-      _currentGuest.isAttending = willAttend;
-      if (!willAttend) {
+      _currentGuest.isAttending = willAttend; // Atualiza o status
+      if (!willAttend) { // Se não vai, zera acompanhantes e item
         _plusOneCount = 0;
         _guestItemBringingController.clear();
         _selectedGuestChosenItem = null;
@@ -61,14 +69,16 @@ class _GuestInvitationScreenState extends State<GuestInvitationScreen> {
     await _updateGuestStatus();
   }
 
+  // Método para atualizar o número de acompanhantes
   void _updatePlusOneCount(int change) async {
     setState(() {
-      _plusOneCount = (_plusOneCount + change).clamp(0, 10);
+      _plusOneCount = (_plusOneCount + change).clamp(0, 10); // Limita entre 0 e 10
       _currentGuest.plusOneCount = _plusOneCount;
     });
     await _updateGuestStatus();
   }
 
+  // Método para processar o item que o convidado escolheu (opção "guestChooses")
   Future<void> _submitGuestChosenItem() async {
     setState(() {
       _currentGuest.itemBringing = _guestItemBringingController.text.trim();
@@ -79,6 +89,7 @@ class _GuestInvitationScreenState extends State<GuestInvitationScreen> {
     );
   }
 
+  // Método para processar a seleção de item da lista pré-definida (opção "predefinedList")
   Future<void> _selectPredefinedItem(String? item) async {
     setState(() {
       _selectedGuestChosenItem = item;
@@ -90,6 +101,7 @@ class _GuestInvitationScreenState extends State<GuestInvitationScreen> {
     );
   }
 
+  // Método auxiliar para atualizar o convidado no serviço.
   Future<void> _updateGuestStatus() async {
     bool success = await _eventService.updateGuest(widget.event.id, _currentGuest);
     if (!success) {
@@ -99,6 +111,7 @@ class _GuestInvitationScreenState extends State<GuestInvitationScreen> {
     }
   }
 
+  // Método para obter a descrição da opção de contribuição
   String _getContributionOptionDescription(ItemContributionOption option) {
     switch (option) {
       case ItemContributionOption.predefinedList:
@@ -176,7 +189,7 @@ class _GuestInvitationScreenState extends State<GuestInvitationScreen> {
             const SizedBox(height: 24),
 
             // Seção Acompanhantes (visível apenas se o convidado confirmar presença E o anfitrião permitir)
-            if (_currentGuest.isAttending && widget.event.allowPlusOne) // NOVO: Condição adicionada
+            if (_currentGuest.isAttending && widget.event.allowPlusOne)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -204,15 +217,22 @@ class _GuestInvitationScreenState extends State<GuestInvitationScreen> {
                   ),
                   const SizedBox(height: 24),
                 ],
-              ),
-            // NOVO: Mensagem se acompanhantes não forem permitidos
+              )
+            // AQUI ESTÁ A CORREÇÃO DE SINTAXE. O 'else if' precisa de um corpo de widget.
+            // Coloquei a mensagem dentro de um `Column` para ser mais explícito,
+            // embora um `Padding` diretamente já funcione.
             else if (_currentGuest.isAttending && !widget.event.allowPlusOne)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 24.0),
-                child: Text(
-                  'O anfitrião não permite convidados adicionais para este evento.',
-                  style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey),
-                ),
+              const Column( // Adicionei Column para garantir que o widget é bem formado
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(bottom: 24.0),
+                    child: Text(
+                      'O anfitrião não permite convidados adicionais para este evento.',
+                      style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey),
+                    ),
+                  ),
+                ],
               ),
 
             // Seção Contribuição de Itens
@@ -238,8 +258,7 @@ class _GuestInvitationScreenState extends State<GuestInvitationScreen> {
                         const Text('Escolha um item da lista do anfitrião:', style: TextStyle(fontSize: 16)),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
-                          // NOVO: Adicione 'package:collection/collection.dart' para firstOrNull
-                          value: _selectedGuestChosenItem ?? widget.event.predefinedItems.firstOrNull,
+                          value: _selectedGuestChosenItem ?? (widget.event.predefinedItems.isNotEmpty ? widget.event.predefinedItems.first : null), // Correção para firstOrNull
                           decoration: const InputDecoration(
                             border: OutlineInputBorder(),
                             labelText: 'Item a trazer',
@@ -286,7 +305,6 @@ class _GuestInvitationScreenState extends State<GuestInvitationScreen> {
               ),
             const SizedBox(height: 24),
 
-            // TODO: Adicionar botão para convidar alguém (se permitido pelo anfitrião)
           ],
         ),
       ),
