@@ -1,3 +1,19 @@
+/**
+ * @project Party Planner
+ * @module Gestão de eventos
+ * @author amaro-netto / Amaro Amarante da Silva Netto
+ * @contact contato@amaronetto.com.br
+ * @date 01/11/2026
+ *
+ * SOBRE OS DIREITOS AUTORAIS:
+ * A arquitetura, design estrutural e desenvolvimento deste software foram
+ * realizados pelo autor supracitado. Os direitos patrimoniais e de licença
+ * de uso pertencem ao próprio autor, Amaro Amarante da Silva Netto.
+ *
+ * Ficam resguardados os direitos morais do autor original, sendo vedada a
+ * remoção deste aviso de autoria do código-fonte (Lei 9.609/1998).
+ */
+
 // lib/services/event_service.dart
 import 'package:flutter/foundation.dart';
 import 'package:party_planner/models/event.dart';
@@ -6,6 +22,12 @@ import 'package:party_planner/models/item.dart';
 
 // Esta classe simula um serviço de dados para eventos, convidados e itens.
 class EventService {
+  // Singleton: todas as telas compartilham os mesmos dados em memória.
+  // Sem isso, um evento criado numa tela não aparecia nas outras.
+  EventService._internal();
+  static final EventService _instance = EventService._internal();
+  factory EventService() => _instance;
+
   // Lista de eventos simulados.
   final List<Event> _mockEvents = [
     Event(

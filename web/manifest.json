@@ -1,11 +1,11 @@
 {
-    "name": "myapp",
-    "short_name": "myapp",
+    "name": "Party Planner",
+    "short_name": "Party Planner",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FF8F0F",
+    "theme_color": "#FF8F0F",
+    "description": "Party Planner - organize festas, convidados e itens. Desenvolvido por Amaro Amarante da Silva Netto.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
