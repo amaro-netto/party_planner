@@ -96,16 +96,30 @@ Este projeto Flutter foi desenvolvido para rodar primariamente como uma aplicaç
     * **Substitua `localhost:9002` pela URL real da sua "Web Preview"** (ex: `https://sua-instancia-abc.cloudshell.google.com:9002`).
     * Cole a URL ajustada na barra de endereços do seu navegador para testar o roteamento direto para a tela de convite.
 
-## Estrutura do Projeto
+## Identidade Visual
 
-A pasta `lib/` contém a maior parte do código do aplicativo, organizada da seguinte forma:
+O visual segue o layout criado no Illustrator: degradê laranja (`#FF8F0F`) para coral (`#FF654D`), multidão em silhueta e a logo "PARTY PLANNER". A splash exibe a logo do autor (Amaro Netto - Soluções em TI). As cores ficam centralizadas em `lib/theme/app_theme.dart` e as imagens em `assets/images/`.
+
+Fluxo de entrada: **Splash** ("Bem Vindo ao") → **Tela Inicial** ("Vamos Começar a Festa!") → **Login** ou **Cadastro** → **Meus Eventos** (botão "+" para criar evento).
+
+## Estrutura do Projeto
 
 ```
 lib/
-├── main.dart             # Ponto de entrada do aplicativo e roteamento principal
-├── models/               # Definições de modelos de dados (Event, Guest, Item, etc.)
-├── screens/              # Telas da interface do usuário (Login, Dashboard, Detalhes Evento, etc.)
-├── services/             # Lógica de negócio e comunicação com backend/dados simulados (AuthService, EventService, CalculatorService, NotificationService)
-├── utils/                # Funções utilitárias e ferramentas auxiliares (se houver)
-└── widgets/              # Componentes de interface de usuário reutilizáveis
+├── main.dart     # Ponto de entrada, tema e rota do link de convite
+├── models/       # Modelos de dados (Event, Guest, Item)
+├── screens/      # Telas (Splash, Inicial, Login, Cadastro, Dashboard, Evento, Convite)
+├── services/     # Regras de negócio e dados simulados (Auth, Event, Calculator, Notification)
+├── theme/        # Cores e tema central do app
+└── widgets/      # Componentes reutilizáveis (fundo, logo, campos e botões em pílula)
+assets/images/    # Logo e silhueta da multidão
 ```
+
+## ⚖️ Autoria e Direitos de Uso
+
+Este sistema foi arquitetado e desenvolvido do zero por **Amaro Amarante da Silva Netto**.
+
+- **Desenvolvimento, Arquitetura e Design:** Amaro Amarante da Silva Netto / [amaro-netto](https://github.com/amaro-netto)
+- **Contato:** contato@amaronetto.com.br
+- **Stack Tecnológica:** Flutter, Dart e Firebase.
+- **Licenciamento:** O uso, a modificação e a exploração deste software são de direito exclusivo do autor. A autoria intelectual da arquitetura de software permanece com o desenvolvedor original, conforme a legislação brasileira de direitos autorais de software (Lei 9.609/1998).

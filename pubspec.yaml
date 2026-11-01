@@ -1,13 +1,18 @@
+# @project Party Planner
+# @author amaro-netto / Amaro Amarante da Silva Netto
+# @contact contato@amaronetto.com.br
+# Direitos morais do autor resguardados (Lei 9.609/1998).
+
 name: party_planner
-description: A new Flutter project.
+description: Party Planner - organizador de festas desenvolvido por Amaro Amarante da Silva Netto.
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 version: 1.0.0+1
 
-environment: # <-- ADICIONE ESTA SEÇÃO AQUI
-  sdk: '^3.8.0-278.1.beta' # <-- E ESTA LINHA COM A VERSÃO SUGERIDA
+environment:
+  sdk: '^3.8.0-278.1.beta'
 
 dependencies:
   flutter:
@@ -17,3 +22,13 @@ dependencies:
   firebase_core: ^2.32.0
   firebase_auth: ^4.20.0
   cloud_firestore: ^4.17.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/

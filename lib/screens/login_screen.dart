@@ -1,13 +1,30 @@
+/**
+ * @project Party Planner
+ * @module Autenticação
+ * @author amaro-netto / Amaro Amarante da Silva Netto
+ * @contact contato@amaronetto.com.br
+ * @date 01/11/2026
+ *
+ * SOBRE OS DIREITOS AUTORAIS:
+ * A arquitetura, design estrutural e desenvolvimento deste software foram
+ * realizados pelo autor supracitado. Os direitos patrimoniais e de licença
+ * de uso pertencem ao próprio autor, Amaro Amarante da Silva Netto.
+ *
+ * Ficam resguardados os direitos morais do autor original, sendo vedada a
+ * remoção deste aviso de autoria do código-fonte (Lei 9.609/1998).
+ */
+
 // lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
-import 'package:party_planner/services/auth_service.dart';
-import 'package:party_planner/screens/register_screen.dart';
 import 'package:party_planner/screens/admin_dashboard_screen.dart';
 import 'package:party_planner/screens/guest_invitation_screen.dart';
+import 'package:party_planner/screens/register_screen.dart';
+import 'package:party_planner/services/auth_service.dart';
 import 'package:party_planner/services/event_service.dart';
-// REMOVIDO: import 'package:party_planner/models/event.dart'; // Removido, pois o tipo Event é inferido ou usado indiretamente via EventService
+import 'package:party_planner/widgets/auth_layout.dart';
+import 'package:party_planner/widgets/pill_widgets.dart';
 
-// A tela de login, que é um StatefulWidget.
+/// Tela de Login no visual do layout (campos em pílula sobre o degradê).
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -22,134 +39,99 @@ class _LoginScreenState extends State<LoginScreen> {
   final EventService _eventService = EventService();
   bool _isLoading = false;
 
-  // Método chamado quando o botão de login é pressionado.
-  Future<void> _login() async {
-    setState(() {
-      _isLoading = true;
-    });
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
-    // Simula a validação de campos
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, preencha email e senha.')),
-      );
-      setState(() { _isLoading = false; });
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _login() async {
+    if (_emailController.text.trim().isEmpty || _passwordController.text.isEmpty) {
+      _showMessage('Por favor, preencha login e senha.');
       return;
     }
 
-    bool success = await _authService.loginUser(
-      _emailController.text,
+    setState(() => _isLoading = true);
+    final success = await _authService.loginUser(
+      _emailController.text.trim(),
       _passwordController.text,
     );
-
-    setState(() {
-      _isLoading = false;
-    });
+    if (!mounted) return;
+    setState(() => _isLoading = false);
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login realizado com sucesso! Redirecionando...')),
-      );
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+        (route) => false,
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Falha no login. Verifique suas credenciais.')),
-      );
+      _showMessage('Falha no login. Verifique suas credenciais.');
     }
   }
 
-  // Método para navegar para a tela de convidado (para testes)
-  void _navigateToGuestInvitation() async {
-    setState(() {
-      _isLoading = true;
-    });
-    // 'Event' é o tipo de retorno de _eventService.getEvents(), então o import não é estritamente necessário
-    // se o tipo for inferido. A remoção do import de Event está ok aqui.
-    var events = await _eventService.getEvents(); 
+  /// Atalho de teste para abrir a visão do convidado com o primeiro evento.
+  Future<void> _openGuestInvitation() async {
+    setState(() => _isLoading = true);
+    final events = await _eventService.getEvents();
+    if (!mounted) return;
+    setState(() => _isLoading = false);
 
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (events.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => GuestInvitationScreen(event: events.first)),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nenhum evento simulado disponível para convite. Crie um como anfitrião primeiro.')),
-      );
+    if (events.isEmpty) {
+      _showMessage('Nenhum evento disponível. Crie um como anfitrião primeiro.');
+      return;
     }
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => GuestInvitationScreen(event: events.first)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('PartyPlanner - Login'),
-        backgroundColor: Theme.of(context).primaryColor,
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
-                ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Senha',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
-                ),
-                obscureText: true,
-              ),
-              const SizedBox(height: 24),
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: _isLoading ? null : _login,
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text('Entrar', style: TextStyle(fontSize: 18)),
-                    ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: _isLoading ? null : () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const RegisterScreen()),
-                  );
-                },
-                child: const Text('Não tem uma conta? Registre-se aqui.', style: TextStyle(color: Colors.deepPurple)),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: _isLoading ? null : _navigateToGuestInvitation,
-                child: const Text('Acessar como Convidado (Teste)', style: TextStyle(color: Colors.blue)),
-              ),
-            ],
-          ),
+    return AuthLayout(
+      children: [
+        PillTextField(
+          controller: _emailController,
+          hint: 'Login',
+          icon: Icons.alternate_email,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          enabled: !_isLoading,
         ),
-      ),
+        const SizedBox(height: 14),
+        PillTextField(
+          controller: _passwordController,
+          hint: 'Senha',
+          icon: Icons.key,
+          obscureText: true,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _login(),
+          enabled: !_isLoading,
+        ),
+        const SizedBox(height: 24),
+        Center(
+          child: PillButton(label: 'ENTRAR', onPressed: _login, isLoading: _isLoading),
+        ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: _isLoading
+              ? null
+              : () => Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                  ),
+          style: TextButton.styleFrom(foregroundColor: Colors.white),
+          child: const Text('Não tem conta? Cadastre-se'),
+        ),
+        TextButton(
+          onPressed: _isLoading ? null : _openGuestInvitation,
+          style: TextButton.styleFrom(foregroundColor: Colors.white70),
+          child: const Text('Acessar como convidado (teste)'),
+        ),
+      ],
     );
   }
 }

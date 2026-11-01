@@ -1,0 +1,25 @@
+# @project Party Planner
+# @author amaro-netto / Amaro Amarante da Silva Netto
+# @contact contato@amaronetto.com.br
+# Direitos morais do autor resguardados (Lei 9.609/1998).
+#
+# Valida o app a cada push e pull request: dependências, análise e testes.
+name: Flutter CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - run: flutter test
