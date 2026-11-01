@@ -98,7 +98,7 @@ Este projeto Flutter foi desenvolvido para rodar primariamente como uma aplicaç
 
 ## Identidade Visual
 
-O visual segue o layout criado no Illustrator: degradê laranja (`#FF8F0F`) para coral (`#FF654D`), multidão em silhueta e a logo "PARTY PLANNER". As cores ficam centralizadas em `lib/theme/app_theme.dart` e as imagens em `assets/images/`.
+O visual segue o layout criado no Illustrator: degradê laranja (`#FF8F0F`) para coral (`#FF654D`), multidão em silhueta e a logo "PARTY PLANNER". A splash exibe a logo do autor (Amaro Netto - Soluções em TI). As cores ficam centralizadas em `lib/theme/app_theme.dart` e as imagens em `assets/images/`.
 
 Fluxo de entrada: **Splash** ("Bem Vindo ao") → **Tela Inicial** ("Vamos Começar a Festa!") → **Login** ou **Cadastro** → **Meus Eventos** (botão "+" para criar evento).
 

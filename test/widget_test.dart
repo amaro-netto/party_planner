@@ -24,6 +24,7 @@ import 'package:party_planner/screens/login_screen.dart';
 import 'package:party_planner/screens/register_screen.dart';
 import 'package:party_planner/services/event_service.dart';
 import 'package:party_planner/theme/app_theme.dart';
+import 'package:party_planner/widgets/author_credit.dart';
 
 Widget _wrap(Widget child) => MaterialApp(theme: AppTheme.light, home: child);
 
@@ -32,7 +33,7 @@ void main() {
     await tester.pumpWidget(const MyApp());
 
     expect(find.text('Bem Vindo ao'), findsOneWidget);
-    expect(find.text('Amaro Netto'), findsOneWidget);
+    expect(find.byType(AuthorCredit), findsOneWidget);
 
     await tester.pumpAndSettle();
 
