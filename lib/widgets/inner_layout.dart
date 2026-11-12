@@ -17,84 +17,139 @@
 // lib/widgets/inner_layout.dart
 import 'package:flutter/material.dart';
 import 'package:party_planner/theme/app_theme.dart';
+import 'package:party_planner/widgets/party_background.dart';
+import 'package:party_planner/widgets/party_logo.dart';
 
-/// Fundo creme→pêssego das telas internas.
-class InnerBackground extends StatelessWidget {
-  const InnerBackground({super.key, required this.child});
+/// Página interna no padrão do Party Planner: o mesmo degradê e a multidão
+/// translúcida do dashboard, com a logo pequena e o título em branco.
+class PartyPage extends StatelessWidget {
+  const PartyPage({
+    super.key,
+    required this.title,
+    required this.child,
+    this.onBack,
+    this.actions = const [],
+  });
 
+  final String title;
   final Widget child;
+  final VoidCallback? onBack;
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(gradient: AppColors.innerBackground),
-      child: child,
+    return PartyBackground(
+      showGround: false,
+      crowdColor: Colors.white.withValues(alpha: 0.18),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 8, 0),
+            child: Row(
+              children: [
+                if (onBack != null)
+                  IconButton(
+                    tooltip: 'Voltar',
+                    icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                    onPressed: onBack,
+                  )
+                else
+                  const SizedBox(width: 12),
+                const PartyLogo(width: 64),
+                const Spacer(),
+                ...actions,
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+          Expanded(child: child),
+        ],
+      ),
     );
   }
 }
 
-/// Cabeçalho coral com cantos inferiores arredondados: voltar, ícone, título
-/// e o envelope de mensagens à direita.
-class CoralHeader extends StatelessWidget {
-  const CoralHeader({
+/// Linha branca com o bloco de ícone cinza à esquerda, no mesmo desenho dos
+/// campos de Login e Cadastro.
+class PillRow extends StatelessWidget {
+  const PillRow({
     super.key,
-    required this.title,
-    this.icon,
-    this.onBack,
-    this.showMail = true,
+    required this.icon,
+    required this.label,
+    this.subtitle,
+    this.onTap,
+    this.trailing = const Icon(Icons.chevron_right, color: AppColors.coral),
   });
 
-  final String title;
-  final IconData? icon;
-  final VoidCallback? onBack;
-  final bool showMail;
+  final IconData icon;
+  final String label;
+  final String? subtitle;
+  final VoidCallback? onTap;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.headerCoral,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: SizedBox(
-          height: 56,
-          child: Row(
-            children: [
-              if (onBack != null)
-                IconButton(
-                  tooltip: 'Voltar',
-                  icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
-                  onPressed: onBack,
-                )
-              else
-                const SizedBox(width: 16),
-              if (icon != null) ...[
-                Icon(icon, color: Colors.white, size: 20),
-                const SizedBox(width: 6),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        elevation: 2,
+        shadowColor: const Color(0x33000000),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  width: 52,
+                  constraints: const BoxConstraints(minHeight: 52),
+                  color: AppColors.fieldIcon,
+                  child: Icon(icon, color: AppColors.ground),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: const TextStyle(
+                            color: AppColors.ground,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (subtitle != null)
+                          Text(
+                            subtitle!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.black54, fontSize: 12),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (trailing != null)
+                  Padding(padding: const EdgeInsets.only(right: 8), child: Center(child: trailing)),
               ],
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              if (showMail)
-                IconButton(
-                  tooltip: 'Mensagens',
-                  icon: const Icon(Icons.mail_outline, color: Colors.white),
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('As mensagens chegam numa próxima versão.')),
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
       ),
@@ -102,118 +157,73 @@ class CoralHeader extends StatelessWidget {
   }
 }
 
-/// Cartão claro arredondado usado nas listas e no menu do evento.
-class SoftCard extends StatelessWidget {
-  const SoftCard({super.key, required this.child, this.onTap, this.padding = const EdgeInsets.all(14)});
-
-  final Widget child;
-  final VoidCallback? onTap;
-  final EdgeInsetsGeometry padding;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.card,
-      borderRadius: BorderRadius.circular(14),
-      elevation: 1.5,
-      shadowColor: const Color(0x33000000),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(padding: padding, child: child),
-      ),
-    );
-  }
-}
-
-/// Título de seção ("Categorias", "Principais", "Dicas"...).
+/// Título de seção em branco sobre o degradê.
 class SectionTitle extends StatelessWidget {
-  const SectionTitle(this.text, {super.key, this.color = AppColors.text});
+  const SectionTitle(this.text, {super.key});
 
   final String text;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
+      padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
       child: Text(
-        text,
-        style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.w700),
-      ),
-    );
-  }
-}
-
-/// Botão "+" amarelo das listas (tarefas, orçamento).
-class AddFab extends StatelessWidget {
-  const AddFab({super.key, required this.onPressed, required this.tooltip});
-
-  final VoidCallback onPressed;
-  final String tooltip;
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton(
-      heroTag: tooltip,
-      tooltip: tooltip,
-      onPressed: onPressed,
-      backgroundColor: AppColors.pending,
-      foregroundColor: Colors.white,
-      shape: const CircleBorder(),
-      child: const Icon(Icons.add, size: 34),
-    );
-  }
-}
-
-/// Mostra a confirmação coral do estudo de usabilidade ("Não" / "SIM").
-/// Devolve true só quando a pessoa toca em SIM.
-Future<bool> showConfirmDialog(BuildContext context, String message) async {
-  final result = await showDialog<bool>(
-    context: context,
-    barrierColor: Colors.black54,
-    builder: (context) => Dialog(
-      backgroundColor: AppColors.headerCoral,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 48),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(22, 22, 22, 14),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              message,
-              style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 22),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    style: TextButton.styleFrom(foregroundColor: AppColors.text),
-                    child: const Text('Não'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.pending,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                    ),
-                    child: const Text('SIM'),
-                  ),
-                ),
-              ],
-            ),
-          ],
+        text.toUpperCase(),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.8,
         ),
       ),
+    );
+  }
+}
+
+/// Folha branca de detalhes que sobe da base da tela.
+Future<T?> showPartySheet<T>(BuildContext context, {required WidgetBuilder builder}) {
+  return showModalBottomSheet<T>(
+    context: context,
+    backgroundColor: Colors.white,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) => SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(24, 20, 24, 20 + MediaQuery.viewInsetsOf(context).bottom),
+        child: builder(context),
+      ),
+    ),
+  );
+}
+
+/// Confirmação antes de excluir. Devolve true só em "EXCLUIR".
+Future<bool> showConfirmDialog(
+  BuildContext context, {
+  required String title,
+  String message = 'Essa ação não pode ser desfeita.',
+  String confirmLabel = 'EXCLUIR',
+}) async {
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text(title, style: const TextStyle(color: AppColors.ground, fontWeight: FontWeight.w700)),
+      content: Text(message, style: const TextStyle(color: Colors.black54)),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          style: TextButton.styleFrom(foregroundColor: AppColors.ground),
+          child: const Text('CANCELAR'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.coral),
+          child: Text(confirmLabel),
+        ),
+      ],
     ),
   );
   return result ?? false;
@@ -227,13 +237,13 @@ int daysUntil(DateTime date) {
   return day.difference(today).inDays;
 }
 
-/// Texto "Faltam X dias!" do layout.
-String daysLeftLabel(DateTime date) {
+/// Contagem regressiva curta: "em 12 dias", "amanhã", "hoje".
+String countdownLabel(DateTime date) {
   final days = daysUntil(date);
-  if (days > 1) return 'Faltam $days dias!';
-  if (days == 1) return 'É amanhã!';
-  if (days == 0) return 'É hoje!';
-  return 'Já aconteceu';
+  if (days > 1) return 'em $days dias';
+  if (days == 1) return 'amanhã';
+  if (days == 0) return 'hoje';
+  return 'já passou';
 }
 
 /// Formata valores em reais sem depender de pacotes externos: R$ 1.234,50.

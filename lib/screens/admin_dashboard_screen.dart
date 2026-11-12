@@ -16,6 +16,7 @@
 
 // lib/screens/admin_dashboard_screen.dart
 import 'package:flutter/material.dart';
+import 'package:party_planner/screens/event_creation_screen.dart';
 import 'package:party_planner/screens/home_tab.dart';
 import 'package:party_planner/screens/profile_screen.dart';
 import 'package:party_planner/screens/suppliers_screen.dart';
@@ -25,7 +26,7 @@ import 'package:party_planner/services/app_session.dart';
 import 'package:party_planner/theme/app_theme.dart';
 import 'package:party_planner/widgets/app_bottom_nav.dart';
 
-/// Área logada do anfitrião: as 5 abas com a barra inferior coral.
+/// Área logada do anfitrião: abas sobre a faixa escura com o "+" central.
 /// Cada aba guarda o próprio estado (IndexedStack).
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -43,12 +44,23 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     _session.reset();
   }
 
+  Future<void> _createEvent() async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const EventCreationScreen()),
+    );
+    if (result == true) {
+      _session.closeEvent();
+      _session.goTo(AppTab.inicio);
+      _session.eventsChanged();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<AppTab>(
       valueListenable: _session.tab,
       builder: (context, tab, _) => Scaffold(
-        backgroundColor: AppColors.peach,
+        extendBody: true,
         body: IndexedStack(
           index: tab.index,
           children: const [
@@ -58,6 +70,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             TipsScreen(),
             TasksScreen(),
           ],
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        floatingActionButton: FloatingActionButton(
+          tooltip: 'Criar evento',
+          onPressed: _createEvent,
+          backgroundColor: AppColors.ground,
+          foregroundColor: Colors.white,
+          elevation: 4,
+          shape: const CircleBorder(side: BorderSide(color: AppColors.accent, width: 3)),
+          child: const Icon(Icons.add, size: 32),
         ),
         bottomNavigationBar: AppBottomNav(current: tab, onSelect: _session.goTo),
       ),

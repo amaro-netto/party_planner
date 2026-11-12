@@ -16,11 +16,12 @@
 
 // lib/screens/suppliers_screen.dart
 import 'package:flutter/material.dart';
+import 'package:party_planner/screens/home_tab.dart';
 import 'package:party_planner/services/app_session.dart';
 import 'package:party_planner/theme/app_theme.dart';
 import 'package:party_planner/widgets/inner_layout.dart';
 
-/// Categoria de fornecedor (ícone e nome).
+/// Categoria de fornecedor.
 class SupplierCategory {
   const SupplierCategory(this.name, this.icon);
 
@@ -35,66 +36,59 @@ class Supplier {
     required this.category,
     required this.distanceKm,
     required this.description,
-    required this.color,
   });
 
   final String name;
   final SupplierCategory category;
   final double distanceKm;
   final String description;
-  final Color color;
 }
 
-const _buffet = SupplierCategory('Buffet', Icons.room_service_outlined);
-const _foto = SupplierCategory('Foto & Vídeo', Icons.photo_camera_outlined);
-const _musica = SupplierCategory('Música', Icons.music_note_outlined);
-const _decoracao = SupplierCategory('Decoração', Icons.celebration_outlined);
-const _doces = SupplierCategory('Bolos & Doces', Icons.cake_outlined);
+const _comida = SupplierCategory('Comida', Icons.restaurant_outlined);
+const _fotos = SupplierCategory('Fotos', Icons.photo_camera_outlined);
+const _som = SupplierCategory('Som', Icons.speaker_outlined);
+const _decoracao = SupplierCategory('Decoração', Icons.local_florist_outlined);
+const _doces = SupplierCategory('Doces', Icons.cake_outlined);
 
-const supplierCategories = [_buffet, _foto, _musica, _decoracao, _doces];
+const supplierCategories = [_comida, _fotos, _som, _decoracao, _doces];
 
 const mockSuppliers = [
   Supplier(
-    name: 'Buffet da Mama',
-    category: _buffet,
-    distanceKm: 2,
-    description: 'Salgados, pratos quentes e equipe de garçons para até 150 pessoas.',
-    color: Color(0xFF8D6E63),
+    name: 'Sabor & Arte Buffet',
+    category: _comida,
+    distanceKm: 1.8,
+    description: 'Salgados, pratos quentes e garçons. Atende de 30 a 150 pessoas.',
   ),
   Supplier(
-    name: 'Flores para Festa',
+    name: 'Ateliê das Flores',
     category: _decoracao,
-    distanceKm: 2,
-    description: 'Arranjos de mesa, arcos de flores e decoração temática.',
-    color: Color(0xFFD81B60),
+    distanceKm: 3,
+    description: 'Arranjos de mesa, painéis e decoração por tema.',
   ),
   Supplier(
-    name: 'Clique Feliz',
-    category: _foto,
+    name: 'Lente Mágica',
+    category: _fotos,
     distanceKm: 4.5,
-    description: 'Fotografia e vídeo do evento, com álbum digital em até 7 dias.',
-    color: Color(0xFF455A64),
+    description: 'Fotos e vídeo do evento, com galeria online em até uma semana.',
   ),
   Supplier(
-    name: 'DJ Batida Certa',
-    category: _musica,
+    name: 'Som na Caixa',
+    category: _som,
     distanceKm: 6,
-    description: 'Som, iluminação e playlist montada junto com o anfitrião.',
-    color: Color(0xFF5E35B1),
+    description: 'DJ, caixas de som e luzes. A seleção de músicas é combinada antes.',
   ),
   Supplier(
-    name: 'Doce Encanto',
+    name: 'Açúcar Mascavo Confeitaria',
     category: _doces,
-    distanceKm: 3.2,
-    description: 'Bolos decorados, docinhos finos e mesa de sobremesas.',
-    color: Color(0xFFF06292),
+    distanceKm: 2.4,
+    description: 'Bolos decorados, docinhos e mesa de sobremesas.',
   ),
 ];
 
-String _distance(double km) =>
-    '${km.toStringAsFixed(km.truncateToDouble() == km ? 0 : 1).replaceAll('.', ',')}km de distância';
+String distanceLabel(double km) =>
+    'a ${km.toStringAsFixed(km.truncateToDouble() == km ? 0 : 1).replaceAll('.', ',')} km';
 
-/// Aba Fornecedores: banner, categorias e lista dos principais.
+/// Aba Fornecedores: filtro por categoria e lista.
 class SuppliersScreen extends StatefulWidget {
   const SuppliersScreen({super.key});
 
@@ -106,41 +100,35 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
   SupplierCategory? _category;
 
   void _openSupplier(Supplier supplier) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.cream,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(supplier.category.icon, color: AppColors.headerCoral),
-                const SizedBox(width: 8),
-                Text(supplier.category.name, style: const TextStyle(color: AppColors.textSoft)),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              supplier.name,
-              style: const TextStyle(color: AppColors.headerCoral, fontSize: 20, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 4),
-            Text(_distance(supplier.distanceKm), style: const TextStyle(color: AppColors.textSoft)),
-            const SizedBox(height: 14),
-            Text(supplier.description, style: const TextStyle(color: AppColors.text, height: 1.4)),
-            const SizedBox(height: 18),
-            const Text(
-              'O contato direto com o fornecedor chega numa próxima versão.',
-              style: TextStyle(color: AppColors.textSoft, fontSize: 12),
-            ),
-          ],
-        ),
+    showPartySheet<void>(
+      context,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(supplier.category.icon, color: AppColors.coral),
+              const SizedBox(width: 8),
+              Text(
+                '${supplier.category.name} · ${distanceLabel(supplier.distanceKm)}',
+                style: const TextStyle(color: Colors.black54),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            supplier.name,
+            style: const TextStyle(color: AppColors.ground, fontSize: 20, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 10),
+          Text(supplier.description, style: const TextStyle(color: Colors.black87, height: 1.5)),
+          const SizedBox(height: 16),
+          const Text(
+            'Fornecedor de exemplo. O contato pelo app chega numa próxima versão.',
+            style: TextStyle(color: Colors.black45, fontSize: 12),
+          ),
+        ],
       ),
     );
   }
@@ -151,139 +139,58 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
         ? mockSuppliers
         : mockSuppliers.where((s) => s.category == _category).toList();
 
-    return InnerBackground(
+    return PartyPage(
+      title: 'Fornecedores',
+      onBack: () => AppSession.instance.goTo(AppTab.inicio),
       child: Column(
         children: [
-          CoralHeader(
-            title: 'Fornecedor',
-            icon: Icons.storefront_outlined,
-            onBack: () => AppSession.instance.goTo(AppTab.inicio),
+          SizedBox(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                for (final category in supplierCategories)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      selected: _category == category,
+                      onSelected: (_) => setState(() => _category = _category == category ? null : category),
+                      showCheckmark: false,
+                      backgroundColor: Colors.white,
+                      selectedColor: AppColors.ground,
+                      side: BorderSide.none,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      avatar: Icon(
+                        category.icon,
+                        size: 18,
+                        color: _category == category ? Colors.white : AppColors.ground,
+                      ),
+                      label: Text(
+                        category.name,
+                        style: TextStyle(
+                          color: _category == category ? Colors.white : AppColors.ground,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, kBottomBarSpace),
               children: [
-                const _Banner(),
-                const SectionTitle('Categorias'),
-                SizedBox(
-                  height: 92,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: supplierCategories.length,
-                    separatorBuilder: (context, index) => const SizedBox(width: 10),
-                    itemBuilder: (context, index) {
-                      final category = supplierCategories[index];
-                      final selected = category == _category;
-                      return SizedBox(
-                        width: 84,
-                        child: SoftCard(
-                          padding: const EdgeInsets.all(8),
-                          onTap: () => setState(() => _category = selected ? null : category),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(category.icon,
-                                  size: 32, color: selected ? AppColors.pending : AppColors.headerCoral),
-                              const SizedBox(height: 6),
-                              Text(
-                                category.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: AppColors.headerCoral,
-                                  fontSize: 11,
-                                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+                for (final supplier in suppliers)
+                  PillRow(
+                    icon: supplier.category.icon,
+                    label: supplier.name,
+                    subtitle: '${supplier.category.name} · ${distanceLabel(supplier.distanceKm)}',
+                    onTap: () => _openSupplier(supplier),
                   ),
-                ),
-                SectionTitle(_category == null ? 'Principais' : _category!.name),
-                for (final supplier in suppliers) ...[
-                  _SupplierCard(supplier: supplier, onTap: () => _openSupplier(supplier)),
-                  const SizedBox(height: 10),
-                ],
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Banner extends StatelessWidget {
-  const _Banner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 130,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF6B21A),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: const Row(
-        children: [
-          Icon(Icons.handshake_outlined, size: 76, color: Colors.white, semanticLabel: 'Aperto de mãos'),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Encontre os melhores fornecedores para sua festa',
-              textAlign: TextAlign.right,
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SupplierCard extends StatelessWidget {
-  const _SupplierCard({required this.supplier, required this.onTap});
-
-  final Supplier supplier;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SoftCard(
-      onTap: onTap,
-      padding: EdgeInsets.zero,
-      child: Row(
-        children: [
-          Container(
-            width: 72,
-            height: 64,
-            color: supplier.color,
-            child: Icon(supplier.category.icon, color: Colors.white, size: 32),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  supplier.name,
-                  style: const TextStyle(color: AppColors.headerCoral, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _distance(supplier.distanceKm),
-                  style: const TextStyle(color: AppColors.textSoft, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 8),
-            child: Icon(Icons.chevron_right, color: AppColors.headerCoral),
           ),
         ],
       ),

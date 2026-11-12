@@ -22,19 +22,19 @@ import 'package:party_planner/widgets/inner_layout.dart';
 const _faq = [
   (
     'Como convido as pessoas?',
-    'No menu do evento, abra Convidados e toque em "Gerar e Copiar Link de Convite". Envie o link por WhatsApp ou e-mail.'
+    'Na página do evento, abra "Convidados e convite" e toque em "Gerar e Copiar Link de Convite". Depois é só colar o link no WhatsApp ou no e-mail.'
   ),
   (
     'O convidado pode levar acompanhante?',
-    'Sim, se você permitir acompanhantes (+1) ao criar o evento. O convidado informa quantos vai levar ao confirmar presença.'
+    'Sim, se você permitir acompanhantes (+1) ao criar o evento. O convidado diz quantos vai levar quando confirma presença.'
   ),
   (
     'Como os convidados escolhem o que levar?',
-    'Ao criar o evento você define se há uma lista pronta, se o convidado escolhe livremente ou se ninguém precisa levar nada.'
+    'Ao criar o evento você escolhe se há uma lista pronta, se cada convidado escolhe livremente ou se ninguém precisa levar nada.'
   ),
   (
-    'Para que servem as cores das tarefas?',
-    'Vermelho é urgente, amarelo é pendente e verde é concluída. Use os botões do topo para filtrar.'
+    'O que significam as cores das tarefas?',
+    'Coral é urgente, laranja é a fazer e verde é feita. Os botões no topo filtram a lista.'
   ),
   (
     'Meus dados ficam salvos?',
@@ -42,50 +42,38 @@ const _faq = [
   ),
 ];
 
-/// Tela Dúvidas frequentes.
+/// Dúvidas frequentes.
 class FaqScreen extends StatelessWidget {
   const FaqScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.peach,
-      body: InnerBackground(
-        child: Column(
+      body: PartyPage(
+        title: 'Dúvidas',
+        onBack: () => Navigator.of(context).pop(),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
-            CoralHeader(
-              title: 'Dúvidas frequentes',
-              icon: Icons.help_outline,
-              onBack: () => Navigator.of(context).pop(),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                children: [
-                  for (final (question, answer) in _faq)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: SoftCard(
-                        padding: EdgeInsets.zero,
-                        child: ExpansionTile(
-                          shape: const Border(),
-                          collapsedShape: const Border(),
-                          iconColor: AppColors.headerCoral,
-                          collapsedIconColor: AppColors.headerCoral,
-                          title: Text(
-                            question,
-                            style: const TextStyle(color: AppColors.headerCoral, fontWeight: FontWeight.w700, fontSize: 14),
-                          ),
-                          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          children: [
-                            Text(answer, style: const TextStyle(color: AppColors.text, height: 1.4)),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
+            for (final (question, answer) in _faq)
+              Card(
+                margin: const EdgeInsets.only(bottom: 10),
+                clipBehavior: Clip.antiAlias,
+                child: ExpansionTile(
+                  shape: const Border(),
+                  collapsedShape: const Border(),
+                  iconColor: AppColors.coral,
+                  collapsedIconColor: AppColors.coral,
+                  title: Text(
+                    question,
+                    style: const TextStyle(color: AppColors.ground, fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
+                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  children: [
+                    Text(answer, style: const TextStyle(color: Colors.black87, height: 1.4)),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),

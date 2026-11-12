@@ -18,21 +18,23 @@
 import 'package:flutter/material.dart';
 import 'package:party_planner/models/event.dart';
 import 'package:party_planner/models/party_task.dart';
+import 'package:party_planner/screens/home_tab.dart';
 import 'package:party_planner/services/app_session.dart';
 import 'package:party_planner/services/task_service.dart';
 import 'package:party_planner/theme/app_theme.dart';
 import 'package:party_planner/widgets/inner_layout.dart';
+import 'package:party_planner/widgets/pill_widgets.dart';
 
-/// Filtros do topo da lista ("Urgentes", "Pendentes", "Concluídas").
-enum TaskFilter { urgentes, pendentes, concluidas }
+/// Filtros da lista de tarefas.
+enum TaskFilter { urgentes, aFazer, feitas }
 
-/// Cor de cada tarefa conforme o estudo de usabilidade.
+/// Cor do status: urgente, a fazer ou feita.
 Color taskColor(PartyTask task) {
-  if (task.done) return AppColors.done;
-  return task.urgent ? AppColors.urgent : AppColors.pending;
+  if (task.done) return AppColors.taskDone;
+  return task.urgent ? AppColors.taskUrgent : AppColors.taskTodo;
 }
 
-/// Aba Tarefas: checklist do evento selecionado.
+/// Aba Tarefas: checklist do evento escolhido.
 class TasksScreen extends StatelessWidget {
   const TasksScreen({super.key});
 
@@ -52,36 +54,27 @@ class _NoEventSelected extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InnerBackground(
-      child: Column(
-        children: [
-          const CoralHeader(title: 'Tarefas a fazer', icon: Icons.format_list_bulleted),
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.checklist, size: 64, color: AppColors.headerCoral),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Escolha um evento na aba Início para ver a lista de tarefas.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.text, fontSize: 15),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => AppSession.instance.goTo(AppTab.inicio),
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.headerCoral),
-                      child: const Text('Ir para Início'),
-                    ),
-                  ],
-                ),
+    return PartyPage(
+      title: 'Tarefas',
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(32, 0, 32, kBottomBarSpace),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Escolha um evento em Meus Eventos para ver as tarefas dele.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontSize: 16),
               ),
-            ),
+              const SizedBox(height: 20),
+              PillButton(
+                label: 'MEUS EVENTOS',
+                onPressed: () => AppSession.instance.goTo(AppTab.inicio),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -107,15 +100,12 @@ class _TaskListState extends State<_TaskList> {
         return tasks;
       case TaskFilter.urgentes:
         return tasks.where((t) => t.urgent && !t.done).toList();
-      case TaskFilter.pendentes:
+      case TaskFilter.aFazer:
         return tasks.where((t) => !t.urgent && !t.done).toList();
-      case TaskFilter.concluidas:
+      case TaskFilter.feitas:
         return tasks.where((t) => t.done).toList();
     }
   }
-
-  void _toggleFilter(TaskFilter filter) =>
-      setState(() => _filter = _filter == filter ? null : filter);
 
   void _toggleDone(PartyTask task) {
     _service.updateTask(task.copyWith(done: !task.done));
@@ -125,29 +115,31 @@ class _TaskListState extends State<_TaskList> {
   void _showMessage(String text) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
-  Future<void> _openTask(PartyTask task) async {
-    final action = await showDialog<_TaskAction>(
-      context: context,
-      builder: (_) => _TaskDetailDialog(task: task),
-    );
-    if (!mounted || action == null) return;
-    switch (action) {
-      case _TaskAction.toggleDone:
-        _toggleDone(task);
-      case _TaskAction.delete:
-        _service.removeTask(task);
-        setState(() {});
-        _showMessage('Tarefa excluída.');
-    }
+  Future<void> _deleteTask(PartyTask task) async {
+    final ok = await showConfirmDialog(context, title: 'Excluir esta tarefa?');
+    if (!ok || !mounted) return;
+    _service.removeTask(task);
+    setState(() {});
+    _showMessage('Tarefa excluída.');
   }
 
-  Future<void> _removeDone() async {
+  Future<void> _openTask(PartyTask task) async {
+    final action = await showPartySheet<String>(
+      context,
+      builder: (context) => _TaskDetail(task: task),
+    );
+    if (!mounted) return;
+    if (action == 'toggle') _toggleDone(task);
+    if (action == 'delete') await _deleteTask(task);
+  }
+
+  Future<void> _clearDone() async {
     final hasDone = _service.tasksFor(widget.event.id).any((t) => t.done);
     if (!hasDone) {
-      _showMessage('Nenhuma tarefa concluída para apagar.');
+      _showMessage('Nenhuma tarefa feita para limpar.');
       return;
     }
-    final ok = await showConfirmDialog(context, 'Tem certeza que deseja deletar as tarefas concluídas?');
+    final ok = await showConfirmDialog(context, title: 'Limpar as tarefas feitas?', confirmLabel: 'LIMPAR');
     if (!ok || !mounted) return;
     final removed = _service.removeDone(widget.event.id);
     setState(() {});
@@ -155,9 +147,9 @@ class _TaskListState extends State<_TaskList> {
   }
 
   Future<void> _addTask() async {
-    final created = await showDialog<bool>(
-      context: context,
-      builder: (_) => _NewTaskDialog(eventId: widget.event.id),
+    final created = await showPartySheet<bool>(
+      context,
+      builder: (_) => _NewTaskForm(eventId: widget.event.id),
     );
     if (created == true && mounted) setState(() {});
   }
@@ -166,76 +158,73 @@ class _TaskListState extends State<_TaskList> {
   Widget build(BuildContext context) {
     final tasks = _visibleTasks;
 
-    return InnerBackground(
+    return PartyPage(
+      title: 'Tarefas · ${widget.event.title}',
+      onBack: () => AppSession.instance.goTo(AppTab.inicio),
+      actions: [
+        IconButton(
+          tooltip: 'Limpar tarefas feitas',
+          icon: const Icon(Icons.cleaning_services_outlined, color: Colors.white),
+          onPressed: _clearDone,
+        ),
+      ],
       child: Column(
         children: [
-          CoralHeader(
-            title: 'Tarefas a fazer',
-            icon: Icons.format_list_bulleted,
-            onBack: () => AppSession.instance.goTo(AppTab.inicio),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-            child: Row(
+          SizedBox(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
-                _FilterChip(
-                  label: 'Urgentes',
-                  icon: Icons.timer_outlined,
-                  color: AppColors.urgent,
-                  selected: _filter == TaskFilter.urgentes,
-                  dimmed: _filter != null && _filter != TaskFilter.urgentes,
-                  onTap: () => _toggleFilter(TaskFilter.urgentes),
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: 'Pendentes',
-                  color: AppColors.pending,
-                  selected: _filter == TaskFilter.pendentes,
-                  dimmed: _filter != null && _filter != TaskFilter.pendentes,
-                  onTap: () => _toggleFilter(TaskFilter.pendentes),
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: 'Concluídas',
-                  color: AppColors.done,
-                  selected: _filter == TaskFilter.concluidas,
-                  dimmed: _filter != null && _filter != TaskFilter.concluidas,
-                  onTap: () => _toggleFilter(TaskFilter.concluidas),
-                ),
+                for (final (filter, label, color) in const [
+                  (TaskFilter.urgentes, 'Urgentes', AppColors.taskUrgent),
+                  (TaskFilter.aFazer, 'A fazer', AppColors.taskTodo),
+                  (TaskFilter.feitas, 'Feitas', AppColors.taskDone),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      selected: _filter == filter,
+                      onSelected: (_) => setState(() => _filter = _filter == filter ? null : filter),
+                      showCheckmark: false,
+                      backgroundColor: Colors.white,
+                      selectedColor: AppColors.ground,
+                      side: BorderSide.none,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      avatar: CircleAvatar(radius: 6, backgroundColor: color),
+                      label: Text(
+                        label,
+                        style: TextStyle(
+                          color: _filter == filter ? Colors.white : AppColors.ground,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
           Expanded(
-            child: tasks.isEmpty
-                ? const Center(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, kBottomBarSpace),
+              children: [
+                if (tasks.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(24),
                     child: Text(
                       'Nenhuma tarefa aqui.',
-                      style: TextStyle(color: AppColors.textSoft),
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                    itemCount: tasks.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) => _TaskCard(
-                      task: tasks[index],
-                      onToggle: () => _toggleDone(tasks[index]),
-                      onOpen: () => _openTask(tasks[index]),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Row(
-              children: [
-                IconButton(
-                  tooltip: 'Apagar tarefas concluídas',
-                  iconSize: 32,
-                  icon: const Icon(Icons.delete_outline, color: AppColors.headerCoral),
-                  onPressed: _removeDone,
-                ),
-                const Spacer(),
-                AddFab(tooltip: 'Nova tarefa', onPressed: _addTask),
+                for (final task in tasks)
+                  _TaskTile(
+                    task: task,
+                    onToggle: () => _toggleDone(task),
+                    onOpen: () => _openTask(task),
+                  ),
+                const SizedBox(height: 8),
+                Center(child: PillButton(label: 'NOVA TAREFA', onPressed: _addTask)),
               ],
             ),
           ),
@@ -245,70 +234,8 @@ class _TaskListState extends State<_TaskList> {
   }
 }
 
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.color,
-    required this.selected,
-    required this.dimmed,
-    required this.onTap,
-    this.icon,
-  });
-
-  final String label;
-  final Color color;
-  final bool selected;
-  final bool dimmed;
-  final VoidCallback onTap;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Semantics(
-        button: true,
-        selected: selected,
-        child: Opacity(
-          opacity: dimmed ? 0.45 : 1,
-          child: Material(
-            color: color,
-            borderRadius: BorderRadius.circular(6),
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(6),
-              child: Container(
-                height: 30,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: selected ? Colors.white : Colors.transparent, width: 2),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        label,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    if (icon != null) ...[
-                      const SizedBox(width: 4),
-                      Icon(icon, size: 14, color: Colors.white),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TaskCard extends StatelessWidget {
-  const _TaskCard({required this.task, required this.onToggle, required this.onOpen});
+class _TaskTile extends StatelessWidget {
+  const _TaskTile({required this.task, required this.onToggle, required this.onOpen});
 
   final PartyTask task;
   final VoidCallback onToggle;
@@ -317,159 +244,133 @@ class _TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = taskColor(task);
-    final subtitle = task.description.isEmpty
-        ? 'Preparar...'
-        : task.description.split(RegExp(r'[.\n]')).first;
-
-    return SoftCard(
-      onTap: onOpen,
-      padding: const EdgeInsets.fromLTRB(6, 10, 8, 10),
-      child: Row(
-        children: [
-          Semantics(
-            label: task.done ? 'Marcar como não concluída' : 'Marcar como concluída',
-            child: InkResponse(
-              onTap: onToggle,
-              radius: 22,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Container(
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: task.done ? color.withValues(alpha: 0.12) : null,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: color, width: 2),
-                  ),
-                  child: task.done ? Icon(Icons.check, size: 16, color: color) : null,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        elevation: 2,
+        shadowColor: const Color(0x33000000),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onOpen,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  task.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w700,
-                    decoration: task.done ? TextDecoration.lineThrough : null,
-                    decorationColor: color,
+                Container(width: 6, color: color),
+                Checkbox(
+                  value: task.done,
+                  onChanged: (_) => onToggle(),
+                  activeColor: color,
+                  side: BorderSide(color: color, width: 2),
+                  semanticLabel: task.done ? 'Marcar como não feita' : 'Marcar como feita',
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          task.title,
+                          style: TextStyle(
+                            color: task.done ? Colors.black45 : AppColors.ground,
+                            fontWeight: FontWeight.w700,
+                            decoration: task.done ? TextDecoration.lineThrough : null,
+                          ),
+                        ),
+                        if (task.description.isNotEmpty)
+                          Text(
+                            task.description,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.black54, fontSize: 12),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: AppColors.textSoft, fontSize: 12),
-                ),
+                if (task.urgent && !task.done)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Icon(Icons.priority_high, color: color, semanticLabel: 'Urgente'),
+                  )
+                else
+                  const SizedBox(width: 12),
               ],
             ),
           ),
-          if (task.urgent && !task.done)
-            Padding(
-              padding: const EdgeInsets.only(right: 4),
-              child: Icon(Icons.timer_outlined, color: color, semanticLabel: 'Urgente'),
-            ),
-          Icon(Icons.chevron_right, color: color),
-        ],
-      ),
-    );
-  }
-}
-
-enum _TaskAction { toggleDone, delete }
-
-/// Detalhe da tarefa: descrição, lixeira e botão "Concluído".
-class _TaskDetailDialog extends StatelessWidget {
-  const _TaskDetailDialog({required this.task});
-
-  final PartyTask task;
-
-  Future<void> _confirmDelete(BuildContext context) async {
-    final ok = await showConfirmDialog(context, 'Tem certeza que deseja deletar a tarefa?');
-    if (ok && context.mounted) Navigator.of(context).pop(_TaskAction.delete);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: AppColors.cream,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 8, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: IconButton(
-                tooltip: 'Fechar',
-                icon: const Icon(Icons.close, color: AppColors.text),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    task.title,
-                    style: const TextStyle(color: AppColors.text, fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    task.description.isEmpty ? 'Sem descrição.' : task.description,
-                    style: const TextStyle(color: AppColors.text, height: 1.5),
-                  ),
-                  const SizedBox(height: 28),
-                  Row(
-                    children: [
-                      IconButton(
-                        tooltip: 'Excluir tarefa',
-                        icon: const Icon(Icons.delete_outline, color: AppColors.headerCoral),
-                        onPressed: () => _confirmDelete(context),
-                      ),
-                      const Spacer(),
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(_TaskAction.toggleDone),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: task.done ? AppColors.pending : AppColors.headerCoral,
-                          padding: const EdgeInsets.symmetric(horizontal: 28),
-                        ),
-                        child: Text(task.done ? 'Reabrir' : 'Concluído'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );
   }
 }
 
-/// Formulário de nova tarefa, com mensagem de erro no título vazio.
-class _NewTaskDialog extends StatefulWidget {
-  const _NewTaskDialog({required this.eventId});
+/// Detalhe da tarefa na folha branca: devolve 'toggle' ou 'delete'.
+class _TaskDetail extends StatelessWidget {
+  const _TaskDetail({required this.task});
+
+  final PartyTask task;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = taskColor(task);
+    final status = task.done ? 'Feita' : (task.urgent ? 'Urgente' : 'A fazer');
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            CircleAvatar(radius: 6, backgroundColor: color),
+            const SizedBox(width: 8),
+            Text(status, style: TextStyle(color: color, fontWeight: FontWeight.w700)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          task.title,
+          style: const TextStyle(color: AppColors.ground, fontSize: 20, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          task.description.isEmpty ? 'Sem descrição.' : task.description,
+          style: const TextStyle(color: Colors.black87, height: 1.5),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            TextButton.icon(
+              onPressed: () => Navigator.of(context).pop('delete'),
+              style: TextButton.styleFrom(foregroundColor: AppColors.accent),
+              icon: const Icon(Icons.delete_outline),
+              label: const Text('Excluir'),
+            ),
+            const Spacer(),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop('toggle'),
+              child: Text(task.done ? 'REABRIR' : 'MARCAR COMO FEITA'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Formulário de nova tarefa, com erro quando o nome fica vazio.
+class _NewTaskForm extends StatefulWidget {
+  const _NewTaskForm({required this.eventId});
 
   final String eventId;
 
   @override
-  State<_NewTaskDialog> createState() => _NewTaskDialogState();
+  State<_NewTaskForm> createState() => _NewTaskFormState();
 }
 
-class _NewTaskDialogState extends State<_NewTaskDialog> {
+class _NewTaskFormState extends State<_NewTaskForm> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   bool _urgent = false;
@@ -499,46 +400,39 @@ class _NewTaskDialogState extends State<_NewTaskDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: AppColors.cream,
-      title: const Text('Nova tarefa'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _titleController,
-              autofocus: true,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(labelText: 'Tarefa', errorText: _titleError),
-              onChanged: (_) {
-                if (_titleError != null) setState(() => _titleError = null);
-              },
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _descriptionController,
-              maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Descrição (opcional)'),
-            ),
-            const SizedBox(height: 8),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Urgente'),
-              value: _urgent,
-              activeThumbColor: AppColors.urgent,
-              onChanged: (value) => setState(() => _urgent = value),
-            ),
-          ],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Nova tarefa',
+          style: TextStyle(color: AppColors.ground, fontSize: 20, fontWeight: FontWeight.w800),
         ),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
-        ElevatedButton(
-          onPressed: _save,
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.headerCoral),
-          child: const Text('Salvar'),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _titleController,
+          autofocus: true,
+          textInputAction: TextInputAction.next,
+          decoration: InputDecoration(labelText: 'Tarefa', errorText: _titleError),
+          onChanged: (_) {
+            if (_titleError != null) setState(() => _titleError = null);
+          },
         ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _descriptionController,
+          maxLines: 2,
+          decoration: const InputDecoration(labelText: 'Detalhes (opcional)'),
+        ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Urgente'),
+          value: _urgent,
+          activeThumbColor: AppColors.taskUrgent,
+          onChanged: (value) => setState(() => _urgent = value),
+        ),
+        const SizedBox(height: 8),
+        ElevatedButton(onPressed: _save, child: const Text('SALVAR')),
       ],
     );
   }

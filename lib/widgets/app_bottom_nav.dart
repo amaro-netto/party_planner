@@ -19,70 +19,27 @@ import 'package:flutter/material.dart';
 import 'package:party_planner/services/app_session.dart';
 import 'package:party_planner/theme/app_theme.dart';
 
-/// Barra inferior em pílula coral com as 5 abas do layout:
-/// Perfil, Fornecedores, Início, Dicas e Tarefas.
+/// Faixa escura inferior do layout (Prancheta 1): o "+" central e os ícones
+/// das abas. O ícone escolhido fica dentro de uma pílula coral.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({super.key, required this.current, required this.onSelect});
 
   final AppTab current;
   final ValueChanged<AppTab> onSelect;
 
-  static const List<(AppTab, IconData, String)> items = [
-    (AppTab.perfil, Icons.account_circle, 'Meu perfil'),
-    (AppTab.fornecedores, Icons.volunteer_activism, 'Fornecedores'),
-    (AppTab.inicio, Icons.home_rounded, 'Início'),
-    (AppTab.dicas, Icons.lightbulb_outline, 'Dicas'),
-    (AppTab.tarefas, Icons.format_list_bulleted, 'Tarefas'),
+  static const List<(AppTab, IconData, String)> left = [
+    (AppTab.inicio, Icons.celebration_outlined, 'Meus eventos'),
+    (AppTab.tarefas, Icons.checklist, 'Tarefas'),
   ];
 
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
-        child: Container(
-          height: 58,
-          decoration: BoxDecoration(
-            color: AppColors.headerCoral,
-            borderRadius: BorderRadius.circular(29),
-            boxShadow: const [
-              BoxShadow(color: Color(0x33000000), blurRadius: 10, offset: Offset(0, 3)),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              for (final (tab, icon, label) in items)
-                _NavButton(
-                  icon: icon,
-                  label: label,
-                  selected: tab == current,
-                  onTap: () => onSelect(tab),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+  static const List<(AppTab, IconData, String)> right = [
+    (AppTab.fornecedores, Icons.storefront_outlined, 'Fornecedores'),
+    (AppTab.dicas, Icons.tips_and_updates_outlined, 'Dicas'),
+  ];
 
-class _NavButton extends StatelessWidget {
-  const _NavButton({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _button((AppTab, IconData, String) item) {
+    final (tab, icon, label) = item;
+    final selected = tab == current;
     return Tooltip(
       message: label,
       child: Semantics(
@@ -90,23 +47,41 @@ class _NavButton extends StatelessWidget {
         selected: selected,
         label: label,
         child: InkResponse(
-          onTap: onTap,
-          radius: 28,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: selected ? Colors.white : Colors.transparent,
-            ),
-            child: Icon(
-              icon,
-              size: 28,
-              color: selected ? AppColors.headerCoral : Colors.white,
+          onTap: () => onSelect(tab),
+          radius: 30,
+          child: Center(
+            // Pílula de seleção: acende no ícone escolhido.
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOut,
+              width: selected ? 60 : 44,
+              height: 36,
+              decoration: BoxDecoration(
+                color: selected ? AppColors.accent : Colors.transparent,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Icon(icon, size: 26, color: selected ? Colors.white : Colors.white70),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomAppBar(
+      color: AppColors.ground,
+      height: 60,
+      padding: EdgeInsets.zero,
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 6,
+      child: Row(
+        children: [
+          for (final item in left) Expanded(child: _button(item)),
+          const SizedBox(width: 72),
+          for (final item in right) Expanded(child: _button(item)),
+        ],
       ),
     );
   }

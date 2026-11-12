@@ -30,6 +30,11 @@ class AppSession {
   final ValueNotifier<AppTab> tab = ValueNotifier(AppTab.inicio);
   final ValueNotifier<Event?> currentEvent = ValueNotifier(null);
 
+  /// Muda de valor quando a lista de eventos precisa ser recarregada.
+  final ValueNotifier<int> eventsVersion = ValueNotifier(0);
+
+  void eventsChanged() => eventsVersion.value++;
+
   void goTo(AppTab value) => tab.value = value;
 
   void openEvent(Event event) {
