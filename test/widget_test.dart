@@ -22,7 +22,11 @@ import 'package:party_planner/main.dart';
 import 'package:party_planner/models/event.dart';
 import 'package:party_planner/screens/login_screen.dart';
 import 'package:party_planner/screens/register_screen.dart';
+import 'package:party_planner/screens/tasks_screen.dart';
+import 'package:party_planner/services/app_session.dart';
 import 'package:party_planner/services/event_service.dart';
+import 'package:party_planner/services/task_service.dart';
+import 'package:party_planner/widgets/app_bottom_nav.dart';
 import 'package:party_planner/theme/app_theme.dart';
 import 'package:party_planner/widgets/author_credit.dart';
 
@@ -75,5 +79,67 @@ void main() {
     final events = await EventService().getEvents();
 
     expect(events.any((e) => e.id == 'teste-compartilhado'), isTrue);
+  });
+
+  test('TaskService cria o checklist padrão e apaga as concluídas', () {
+    final service = TaskService();
+    final tasks = service.tasksFor('evento-checklist');
+
+    expect(tasks, isNotEmpty);
+    expect(tasks.first.title, 'Fazer lista de convidados');
+    expect(tasks.first.urgent, isTrue);
+
+    service.updateTask(tasks.first.copyWith(done: true));
+    expect(service.removeDone('evento-checklist'), 1);
+    expect(service.tasksFor('evento-checklist').length, tasks.length - 1);
+  });
+
+  testWidgets('Barra inferior troca de aba', (WidgetTester tester) async {
+    final session = AppSession.instance..reset();
+    await tester.pumpWidget(_wrap(
+      Scaffold(
+        body: ValueListenableBuilder<AppTab>(
+          valueListenable: session.tab,
+          builder: (context, tab, _) => AppBottomNav(current: tab, onSelect: session.goTo),
+        ),
+      ),
+    ));
+
+    await tester.tap(find.byTooltip('Dicas'));
+    await tester.pump();
+    expect(session.tab.value, AppTab.dicas);
+
+    await tester.tap(find.byTooltip('Tarefas'));
+    await tester.pump();
+    expect(session.tab.value, AppTab.tarefas);
+  });
+
+  testWidgets('Excluir tarefa pede confirmação', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    AppSession.instance.currentEvent.value = Event(
+      id: 'evento-exclusao',
+      title: 'Festa',
+      location: 'Casa',
+      date: DateTime(2030, 1, 1, 20),
+      description: '',
+      hostId: 'host',
+    );
+    addTearDown(AppSession.instance.reset);
+
+    await tester.pumpWidget(_wrap(const Scaffold(body: TasksScreen())));
+    expect(find.text('Fazer lista de convidados'), findsOneWidget);
+
+    await tester.tap(find.text('Fazer lista de convidados'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Excluir tarefa'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tem certeza que deseja deletar a tarefa?'), findsOneWidget);
+
+    await tester.tap(find.text('SIM'));
+    await tester.pumpAndSettle();
+    expect(find.text('Fazer lista de convidados'), findsNothing);
   });
 }
