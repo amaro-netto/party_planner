@@ -14,11 +14,13 @@
  * remoção deste aviso de autoria do código-fonte (Lei 9.609/1998).
  */
 
+
 // lib/screens/budget_screen.dart
 import 'package:flutter/material.dart';
 import 'package:party_planner/models/event.dart';
 import 'package:party_planner/theme/app_theme.dart';
 import 'package:party_planner/widgets/inner_layout.dart';
+import 'package:party_planner/widgets/pill_widgets.dart';
 
 /// Gasto do orçamento de um evento.
 class Expense {
@@ -58,7 +60,7 @@ double? parseMoney(String text) {
   return value == null || value <= 0 ? null : value;
 }
 
-/// Tela Orçamento do evento: total e lista de gastos.
+/// Orçamento do evento: total e lista de gastos.
 class BudgetScreen extends StatefulWidget {
   const BudgetScreen({super.key, required this.event});
 
@@ -72,15 +74,15 @@ class _BudgetScreenState extends State<BudgetScreen> {
   final BudgetStore _store = BudgetStore.instance;
 
   Future<void> _addExpense() async {
-    final added = await showDialog<bool>(
-      context: context,
-      builder: (_) => _ExpenseDialog(eventId: widget.event.id),
+    final added = await showPartySheet<bool>(
+      context,
+      builder: (_) => _ExpenseForm(eventId: widget.event.id),
     );
     if (added == true && mounted) setState(() {});
   }
 
   Future<void> _remove(Expense expense) async {
-    final ok = await showConfirmDialog(context, 'Tem certeza que deseja apagar "${expense.name}"?');
+    final ok = await showConfirmDialog(context, title: 'Excluir "${expense.name}"?');
     if (!ok || !mounted) return;
     setState(() => _store.remove(widget.event.id, expense));
   }
@@ -90,82 +92,52 @@ class _BudgetScreenState extends State<BudgetScreen> {
     final expenses = _store.expensesFor(widget.event.id);
 
     return Scaffold(
-      backgroundColor: AppColors.peach,
-      floatingActionButton: AddFab(tooltip: 'Novo gasto', onPressed: _addExpense),
-      body: InnerBackground(
-        child: Column(
+      body: PartyPage(
+        title: 'Orçamento',
+        onBack: () => Navigator.of(context).pop(),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
-            CoralHeader(
-              title: 'Orçamento',
-              icon: Icons.account_balance_wallet_outlined,
-              onBack: () => Navigator.of(context).pop(),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Container(
-                width: double.infinity,
+            Card(
+              child: Padding(
                 padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  gradient: AppColors.background,
-                  borderRadius: BorderRadius.circular(16),
-                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(widget.event.title, style: const TextStyle(color: Colors.white)),
+                    Text(widget.event.title, style: const TextStyle(color: Colors.black54)),
                     const SizedBox(height: 4),
-                    const Text('Total previsto', style: TextStyle(color: Colors.white70, fontSize: 12)),
                     Text(
                       formatMoney(_store.total(widget.event.id)),
-                      style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
+                      style: const TextStyle(color: AppColors.ground, fontSize: 30, fontWeight: FontWeight.w800),
                     ),
+                    const Text('total previsto', style: TextStyle(color: Colors.black54, fontSize: 12)),
                   ],
                 ),
               ),
             ),
-            Expanded(
-              child: expenses.isEmpty
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Text(
-                          'Nenhum gasto ainda. Toque no + para adicionar local, comida, bebida...',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.textSoft),
-                        ),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-                      itemCount: expenses.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final expense = expenses[index];
-                        return SoftCard(
-                          padding: const EdgeInsets.fromLTRB(14, 6, 4, 6),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  expense.name,
-                                  style: const TextStyle(color: AppColors.text, fontWeight: FontWeight.w600),
-                                ),
-                              ),
-                              Text(
-                                formatMoney(expense.value),
-                                style: const TextStyle(color: AppColors.headerCoral, fontWeight: FontWeight.w700),
-                              ),
-                              IconButton(
-                                tooltip: 'Apagar gasto',
-                                icon: const Icon(Icons.delete_outline, color: AppColors.textSoft),
-                                onPressed: () => _remove(expense),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-            ),
+            const SectionTitle('Gastos'),
+            if (expenses.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text(
+                  'Nenhum gasto ainda. Adicione local, comida, bebida...',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            for (final expense in expenses)
+              PillRow(
+                icon: Icons.receipt_long_outlined,
+                label: expense.name,
+                subtitle: formatMoney(expense.value),
+                trailing: IconButton(
+                  tooltip: 'Excluir gasto',
+                  icon: const Icon(Icons.delete_outline, color: Colors.black45),
+                  onPressed: () => _remove(expense),
+                ),
+              ),
+            const SizedBox(height: 8),
+            Center(child: PillButton(label: 'NOVO GASTO', onPressed: _addExpense)),
           ],
         ),
       ),
@@ -173,16 +145,16 @@ class _BudgetScreenState extends State<BudgetScreen> {
   }
 }
 
-class _ExpenseDialog extends StatefulWidget {
-  const _ExpenseDialog({required this.eventId});
+class _ExpenseForm extends StatefulWidget {
+  const _ExpenseForm({required this.eventId});
 
   final String eventId;
 
   @override
-  State<_ExpenseDialog> createState() => _ExpenseDialogState();
+  State<_ExpenseForm> createState() => _ExpenseFormState();
 }
 
-class _ExpenseDialogState extends State<_ExpenseDialog> {
+class _ExpenseFormState extends State<_ExpenseForm> {
   final _nameController = TextEditingController();
   final _valueController = TextEditingController();
   String? _nameError;
@@ -209,34 +181,30 @@ class _ExpenseDialogState extends State<_ExpenseDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: AppColors.cream,
-      title: const Text('Novo gasto'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _nameController,
-            autofocus: true,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(labelText: 'Descrição', errorText: _nameError),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _valueController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            onSubmitted: (_) => _save(),
-            decoration: InputDecoration(labelText: 'Valor (R\$)', errorText: _valueError),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
-        ElevatedButton(
-          onPressed: _save,
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.headerCoral),
-          child: const Text('Salvar'),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Novo gasto',
+          style: TextStyle(color: AppColors.ground, fontSize: 20, fontWeight: FontWeight.w800),
         ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _nameController,
+          autofocus: true,
+          textInputAction: TextInputAction.next,
+          decoration: InputDecoration(labelText: 'Descrição', errorText: _nameError),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _valueController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onSubmitted: (_) => _save(),
+          decoration: InputDecoration(labelText: 'Valor (R\$)', errorText: _valueError),
+        ),
+        const SizedBox(height: 16),
+        ElevatedButton(onPressed: _save, child: const Text('SALVAR')),
       ],
     );
   }

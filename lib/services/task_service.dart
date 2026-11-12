@@ -30,12 +30,12 @@ class TaskService {
   int _nextId = 1;
 
   static const List<(String, String, bool)> _defaultTasks = [
-    ('Fazer lista de convidados', 'Preparar a lista com nome e contato de quem vai ser convidado.', true),
-    ('Definir o orçamento', 'Preparar quanto pode ser gasto com local, comida, bebida e decoração.', true),
-    ('Reservar o local', 'Preparar a reserva e confirmar data, horário e capacidade.', false),
-    ('Contratar o buffet', 'Preparar orçamentos com pelo menos dois fornecedores.', false),
-    ('Escolher a decoração', 'Preparar tema, cores e itens de decoração.', false),
-    ('Enviar os convites', 'Preparar o link de convite e enviar para os convidados.', false),
+    ('Fazer lista de convidados', 'Nome e contato de cada pessoa que vai receber o convite.', true),
+    ('Definir o orçamento', 'Quanto dá para gastar com local, comida, bebida e decoração.', true),
+    ('Reservar o local', 'Confirmar data, horário e quantas pessoas cabem.', false),
+    ('Contratar o buffet', 'Pedir orçamento para pelo menos dois fornecedores.', false),
+    ('Escolher a decoração', 'Tema, cores e o que comprar ou alugar.', false),
+    ('Enviar os convites', 'Gerar o link de convite e mandar para os convidados.', false),
   ];
 
   String _newId() => 'task${_nextId++}';

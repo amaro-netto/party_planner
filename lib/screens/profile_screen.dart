@@ -16,6 +16,7 @@
 
 // lib/screens/profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:party_planner/screens/home_tab.dart';
 import 'package:party_planner/screens/welcome_screen.dart';
 import 'package:party_planner/services/app_session.dart';
 import 'package:party_planner/services/auth_service.dart';
@@ -23,12 +24,17 @@ import 'package:party_planner/theme/app_theme.dart';
 import 'package:party_planner/widgets/author_credit.dart';
 import 'package:party_planner/widgets/inner_layout.dart';
 
-/// Aba Meu perfil: dados da sessão, atalhos e sair.
+/// Meu perfil: dados da sessão, atalhos e sair.
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   Future<void> _logout(BuildContext context) async {
-    final ok = await showConfirmDialog(context, 'Tem certeza que deseja sair?');
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Sair da conta?',
+      message: 'Você volta para a tela inicial.',
+      confirmLabel: 'SAIR',
+    );
     if (!ok) return;
     await AuthService().logout();
     if (!context.mounted) return;
@@ -42,68 +48,45 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = AuthService();
     final session = AppSession.instance;
-    final name = auth.currentUserName?.trim().isNotEmpty == true ? auth.currentUserName!.trim() : 'Anfitrião';
+    final rawName = auth.currentUserName?.trim() ?? '';
+    final name = rawName.isEmpty ? 'Anfitrião' : rawName;
     final email = auth.currentUserEmail ?? 'Sessão de demonstração';
 
-    Widget option(IconData icon, String label, VoidCallback onTap) => Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: SoftCard(
-            onTap: onTap,
-            child: Row(
-              children: [
-                Icon(icon, color: AppColors.headerCoral),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(label, style: const TextStyle(color: AppColors.text, fontWeight: FontWeight.w600)),
-                ),
-                const Icon(Icons.chevron_right, color: AppColors.headerCoral),
-              ],
-            ),
-          ),
-        );
-
-    return InnerBackground(
-      child: Column(
+    return PartyPage(
+      title: 'Meu perfil',
+      onBack: () => session.goTo(AppTab.inicio),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, kBottomBarSpace),
         children: [
-          CoralHeader(
-            title: 'Meu perfil',
-            icon: Icons.account_circle,
-            onBack: () => session.goTo(AppTab.inicio),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-              children: [
-                Center(
-                  child: CircleAvatar(
-                    radius: 42,
-                    backgroundColor: AppColors.headerCoral,
-                    child: Text(
-                      name.characters.first.toUpperCase(),
-                      style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  name,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppColors.text, fontSize: 20, fontWeight: FontWeight.w800),
-                ),
-                Text(email, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSoft)),
-                const SizedBox(height: 24),
-                option(Icons.celebration_outlined, 'Meus eventos', () {
-                  session.closeEvent();
-                  session.goTo(AppTab.inicio);
-                }),
-                option(Icons.volunteer_activism, 'Fornecedores', () => session.goTo(AppTab.fornecedores)),
-                option(Icons.lightbulb_outline, 'Dicas & Ideias', () => session.goTo(AppTab.dicas)),
-                option(Icons.logout, 'Sair', () => _logout(context)),
-                const SizedBox(height: 24),
-                const Center(child: AuthorCredit(width: 150)),
-              ],
+          Center(
+            child: CircleAvatar(
+              radius: 40,
+              backgroundColor: Colors.white,
+              child: Text(
+                name.characters.first.toUpperCase(),
+                style: const TextStyle(color: AppColors.coral, fontSize: 32, fontWeight: FontWeight.w800),
+              ),
             ),
           ),
+          const SizedBox(height: 10),
+          Text(
+            name,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+          ),
+          Text(email, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70)),
+          const SizedBox(height: 20),
+          PillRow(
+            icon: Icons.celebration_outlined,
+            label: 'Meus eventos',
+            onTap: () {
+              session.closeEvent();
+              session.goTo(AppTab.inicio);
+            },
+          ),
+          PillRow(icon: Icons.logout, label: 'Sair', onTap: () => _logout(context)),
+          const SizedBox(height: 20),
+          const Center(child: AuthorCredit(width: 150)),
         ],
       ),
     );

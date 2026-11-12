@@ -134,11 +134,11 @@ void main() {
 
     await tester.tap(find.text('Fazer lista de convidados'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Excluir tarefa'));
+    await tester.tap(find.text('Excluir'));
     await tester.pumpAndSettle();
-    expect(find.text('Tem certeza que deseja deletar a tarefa?'), findsOneWidget);
+    expect(find.text('Excluir esta tarefa?'), findsOneWidget);
 
-    await tester.tap(find.text('SIM'));
+    await tester.tap(find.text('EXCLUIR'));
     await tester.pumpAndSettle();
     expect(find.text('Fazer lista de convidados'), findsNothing);
   });
