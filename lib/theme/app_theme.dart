@@ -44,6 +44,40 @@ class AppColors {
     end: Alignment.bottomCenter,
     colors: [orange, coral],
   );
+
+  // ---- Telas internas (menu do evento, tarefas, fornecedores, dicas) ----
+
+  /// Creme do topo das telas internas.
+  static const Color cream = Color(0xFFFDF1E3);
+
+  /// Pêssego da base das telas internas.
+  static const Color peach = Color(0xFFF8D5BA);
+
+  /// Coral do cabeçalho e da barra inferior.
+  static const Color headerCoral = Color(0xFFEC6446);
+
+  /// Fundo claro dos cartões.
+  static const Color card = Color(0xFFFFFBF6);
+
+  /// Texto principal das telas internas.
+  static const Color text = Color(0xFF4A4A4A);
+
+  /// Texto secundário (descrições curtas).
+  static const Color textSoft = Color(0xFF8A8A8A);
+
+  /// Status das tarefas, definidos no estudo de usabilidade.
+  static const Color urgent = Color(0xFFE5361F);
+  static const Color pending = Color(0xFFEDB234);
+  static const Color done = Color(0xFF3A8C7E);
+
+  /// Azul-marinho do cartão "ideias".
+  static const Color ideas = Color(0xFF2F4F86);
+
+  static const LinearGradient innerBackground = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [cream, peach],
+  );
 }
 
 /// Tema central do aplicativo.
